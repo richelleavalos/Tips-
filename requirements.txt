@@ -1,0 +1,1 @@
+# Tips v1 usa únicamente la biblioteca estándar de Python en esta etapa.
