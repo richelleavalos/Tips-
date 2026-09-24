@@ -1,10 +1,10 @@
-# TIPS v5 — Panel administrativo
+# TIPS v5 — Usuario y sitio público
 
 Este es uno de cuatro paquetes complementarios de **la misma versión** `Tips-v5-UX-Estable`. No es una aplicación completa por sí solo. Al unir los cuatro, se reconstruyen todos los archivos de código y recursos de la versión elegida, sin cambiar su contenido.
 
-- Rama propuesta: `equipo/admin`.
-- Archivos asignados: **20** (inventario exacto en `ARCHIVOS.txt`).
-- Responsabilidad: Vistas, estilos y JavaScript del panel administrativo. Sus endpoints Python pertenecen al paquete backend; coordinar allí los cambios en la API.
+- Rama propuesta: `equipo/usuario`.
+- Archivos asignados: **21** (inventario exacto en `ARCHIVOS.txt`).
+- Responsabilidad: Inicio, tienda, portafolio, contacto, autenticación, carrito, checkout, cuenta del usuario, CSS y JavaScript del cliente y sus pruebas JavaScript.
 - Identificador de la versión común: `d896534895af062764d354fad389a7f6c7713be449be829ffb468970b651e251`.
 
 ## Preparar la rama
@@ -16,10 +16,10 @@ Desde una terminal situada en la raíz de tu clon, con el trabajo previo guardad
 ```bash
 git status
 git fetch origin
-git switch -c equipo/admin ede19db3ab04a5e5d30ca16fc9bb75ea0d065407
+git switch -c equipo/usuario ede19db3ab04a5e5d30ca16fc9bb75ea0d065407
 ```
 
-Si ese commit no está en tu repositorio, acuerden una base común de `fofo` y reemplacen el identificador en los cuatro paquetes. Si la rama propuesta ya existe, revísala y usa `git switch equipo/admin` en lugar de crearla nuevamente. No hagas estos cambios directamente en `main`.
+Si ese commit no está en tu repositorio, acuerden una base común de `fofo` y reemplacen el identificador en los cuatro paquetes. Si la rama propuesta ya existe, revísala y usa `git switch equipo/usuario` en lugar de crearla nuevamente. No hagas estos cambios directamente en `main`.
 
 ## Copiar únicamente tu sección
 
@@ -34,17 +34,17 @@ Descomprime este ZIP **fuera del clon**, por ejemplo en Descargas. Dentro están
 Requiere Python 3.10 o posterior, como el código del proyecto. En Mac, desde la raíz del clon (los ejemplos suponen que descomprimiste en Descargas):
 
 ```bash
-python3 "$HOME/Downloads/TIPS-v5-04-admin/aplicar.py" .
-python3 "$HOME/Downloads/TIPS-v5-04-admin/aplicar.py" . --aplicar
+python3 "$HOME/Downloads/TIPS-v5-03-usuario/aplicar.py" .
+python3 "$HOME/Downloads/TIPS-v5-03-usuario/aplicar.py" . --aplicar
 ```
 
-El primer comando solo comprueba. El segundo copia. El asistente exige exactamente `equipo/admin`, se detiene si hay cambios versionados pendientes o si sobrescribiría archivos locales sin seguimiento, comprueba las huellas y respalda los archivos reemplazados en una carpeta temporal cuya ruta imprime. No ejecuta commits, pushes ni merges. Se puede repetir si los archivos ya coinciden.
+El primer comando solo comprueba. El segundo copia. El asistente exige exactamente `equipo/usuario`, se detiene si hay cambios versionados pendientes o si sobrescribiría archivos locales sin seguimiento, comprueba las huellas y respalda los archivos reemplazados en una carpeta temporal cuya ruta imprime. No ejecuta commits, pushes ni merges. Se puede repetir si los archivos ya coinciden.
 
 En Windows PowerShell:
 
 ```powershell
-python "$env:USERPROFILE\Downloads\TIPS-v5-04-admin\aplicar.py" .
-python "$env:USERPROFILE\Downloads\TIPS-v5-04-admin\aplicar.py" . --aplicar
+python "$env:USERPROFILE\Downloads\TIPS-v5-03-usuario\aplicar.py" .
+python "$env:USERPROFILE\Downloads\TIPS-v5-03-usuario\aplicar.py" . --aplicar
 ```
 
 Si descomprimiste en otra ubicación, ajusta solo la ruta al paquete. No copies la carpeta `codigo` como una carpeta nueva del proyecto: sus contenidos van en la raíz. El asistente hace esa combinación archivo por archivo.
@@ -55,21 +55,21 @@ En Mac:
 
 ```bash
 git status
-git add --pathspec-from-file="$HOME/Downloads/TIPS-v5-04-admin/ARCHIVOS.txt"
+git add --pathspec-from-file="$HOME/Downloads/TIPS-v5-03-usuario/ARCHIVOS.txt"
 git diff --cached --stat
-git commit -m "Agregar interfaz administrativa de TIPS v5"
+git commit -m "Agregar sitio público y área de usuario de TIPS v5"
 ```
 
 En Windows, el comando para preparar archivos es:
 
 ```powershell
-git add --pathspec-from-file="$env:USERPROFILE\Downloads\TIPS-v5-04-admin\ARCHIVOS.txt"
+git add --pathspec-from-file="$env:USERPROFILE\Downloads\TIPS-v5-03-usuario\ARCHIVOS.txt"
 ```
 
 Luego usa el mismo `git diff` y `git commit` del ejemplo. Al estar listo para compartir la rama:
 
 ```bash
-git push -u origin equipo/admin
+git push -u origin equipo/usuario
 ```
 
 Si Git indica que no hay cambios, esa sección ya coincide con tu base; no hace falta crear un commit vacío. Estos paquetes son una división del código existente, no cuatro cambios nuevos sobre una base que ya contenga toda la v5.
