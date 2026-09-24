@@ -1,0 +1,91 @@
+<!doctype html>
+<!-- Página de inicio TIPS. La estructura usa componentes globales y conserva los data-* que alimentan el contenido dinámico. -->
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="TIPS: arquitectura, objetos e interiores para crear mejores espacios.">
+  <title>TIPS | Arquitectura, objetos e interiores</title>
+  
+  
+  
+  
+  
+  
+<link rel="stylesheet" href="/frontend/usuario/css/public.css?v=20260923-5"></head>
+<body data-page="home">
+  <header class="topbar" data-header>
+    <a class="brand-lockup" href="/index.html" aria-label="TIPS inicio">
+      <img class="brand-logo" src="/assets/logos/tips-logo-black.svg" alt="TIPS">
+      <span class="brand-caption">arquitectura<br>objetos<br>interiores</span>
+    </a>
+    <button class="nav-toggle" data-nav-toggle aria-expanded="false" aria-label="Abrir menú"><span></span><span></span></button>
+    <nav class="main-nav" data-nav>
+      <a class="active" href="/index.html">Inicio</a>
+      <a href="/tienda.html">Tienda</a>
+      <a href="/arquitectura.html#proyectos">Portafolio</a>
+      <a href="/arquitectura.html">Nosotros</a>
+      <a href="/contacto.html">Contacto</a>
+    </nav>
+    <div class="header-actions">
+      <span data-profile-slot class="profile-slot-loading"></span>
+      <button class="cart-trigger" data-cart-open aria-label="Abrir carrito">Bolsa <span data-cart-count>0</span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="editorial-home-hero" aria-labelledby="home-title">
+      <div class="editorial-home-copy">
+        <p class="eyebrow" data-site-home-eyebrow>Diseño con propósito</p>
+        <h1 id="home-title">Espacios que inspiran, objetos que cuentan <em>historias.</em></h1>
+        <p data-site-home-description>Arquitectura, objetos e interiores para una vida más consciente, funcional y estética.</p>
+        <div class="editorial-home-actions">
+          <a class="btn primary" href="/tienda.html">Explorar tienda <span>→</span></a>
+          <a class="btn ghost" href="/arquitectura.html#proyectos">Ver portafolio</a>
+        </div>
+      </div>
+      <div class="editorial-home-visual" aria-label="Interior TIPS con materiales naturales">
+        <p class="editorial-handnote">Ideas para<br>mejores espacios<br>—</p>
+        <div class="editorial-slide-nav" aria-hidden="true"><span>01 / 03</span><i>←</i><i>→</i></div>
+      </div>
+      <div class="editorial-values" aria-label="Valores de TIPS">
+        <div class="editorial-value"><i>⌁</i><div><b>Diseño sostenible</b><span>Decisiones con propósito</span></div></div>
+        <div class="editorial-value"><i>◇</i><div><b>Objetos funcionales</b><span>Estética para el día a día</span></div></div>
+        <div class="editorial-value"><i>⌂</i><div><b>Espacios reales</b><span>Diseñados para vivirlos</span></div></div>
+        <div class="editorial-value"><i>◎</i><div><b>Proyectos que inspiran</b><span>Ideas que cobran vida</span></div></div>
+      </div>
+    </section>
+
+    <section class="section shell product-preview-section" id="coleccion">
+      <div class="section-head">
+        <div><p class="eyebrow">Colección destacada</p><h2>Objetos que transforman tu día a día.</h2></div>
+        <a href="/tienda.html">Ver todos&nbsp; →</a>
+      </div>
+      <div class="mini-product-grid" data-home-products>
+        <article class="tips-skeleton product"></article><article class="tips-skeleton product"></article><article class="tips-skeleton product"></article><article class="tips-skeleton product"></article><article class="tips-skeleton product"></article>
+      </div>
+    </section>
+
+    <section class="dual-feature shell" aria-label="Explora TIPS">
+      <a class="feature-card architecture" href="/arquitectura.html#proyectos"><div class="feature-visual"></div><div><p>Portafolio</p><h2>Espacios pensados desde la forma en que se viven.</h2><span class="text-arrow">Explorar proyectos →</span></div></a>
+      <a class="feature-card products" href="/contacto.html"><div class="feature-visual"></div><div><p>Tu proyecto</p><h2>Una idea clara puede ser el inicio de un gran espacio.</h2><span class="text-arrow">Cuéntanos tu idea →</span></div></a>
+    </section>
+
+    <section class="section shell" id="portafolio">
+      <div class="section-head"><div><p class="eyebrow">Arquitectura e interiores</p><h2>Proyectos con identidad propia.</h2></div><a href="/arquitectura.html#proyectos">Ver portafolio →</a></div>
+      <div class="project-strip" data-home-projects><article class="tips-skeleton project"></article><article class="tips-skeleton project"></article><article class="tips-skeleton project"></article><article class="tips-skeleton project"></article></div>
+    </section>
+
+    <section class="quote-banner"><div class="shell quote-banner-inner"><div><p class="eyebrow">¿Tienes un proyecto?</p><h2>Diseñemos algo que se sienta realmente tuyo.</h2></div><a class="btn light" href="/contacto.html">Solicitar cotización <span>→</span></a></div></section>
+  </main>
+
+  <footer class="footer"><div class="shell footer-grid"><div><img class="footer-brand-logo brand-logo" src="/assets/logos/tips-logo-black.svg" alt="TIPS"><p>Arquitectura, objetos e interiores para mejores espacios.</p></div><div><strong>Navegación</strong><a href="/index.html">Inicio</a><a href="/tienda.html">Tienda</a><a href="/arquitectura.html#proyectos">Portafolio</a><a href="/contacto.html">Contacto</a></div><div><strong>Tu cuenta</strong><a href="/cuenta.html">Iniciar sesión</a><a href="/perfil.html">Mi cuenta</a><a href="/checkout.html">Checkout</a></div><div><strong>Contacto</strong><span data-site-location>San Salvador, El Salvador</span><span>Atención con cita previa</span></div></div><div class="shell footer-bottom"><span>© 2026 TIPS. Todos los derechos reservados.</span><span>Diseño con intención.</span></div></footer>
+
+  <aside class="cart-drawer" data-cart-drawer aria-hidden="true"><div class="cart-panel"><div class="drawer-head"><div><small>Tu selección</small><h2>Carrito</h2></div><button data-cart-close aria-label="Cerrar">×</button></div><div data-cart-items class="cart-items"></div><div class="cart-footer"><div class="cart-total"><span>Subtotal</span><strong data-cart-subtotal>$0.00</strong></div><a class="btn primary wide" href="/checkout.html">Continuar al checkout</a></div></div></aside>
+  <script src="/frontend/usuario/js/site-settings.js?v=20260923-5" defer></script>
+  
+  <script src="/frontend/usuario/js/app.js?v=20260923-5" defer></script>
+  <script src="/frontend/usuario/js/profile-menu.js?v=20260923-5" defer></script>
+  <script src="/frontend/usuario/js/client-ui.js?v=20260923-5" defer></script>
+  <script src="/frontend/global/js/motion-loader.js?v=20260923-5" defer></script>
+</body></html>

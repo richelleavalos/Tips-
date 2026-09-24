@@ -1,0 +1,33 @@
+<!doctype html>
+<!-- Acceso de cliente. Los formularios conservan los selectores consumidos por app.js. -->
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mi cuenta | TIPS</title>
+<link rel="stylesheet" href="/frontend/usuario/css/public.css?v=20260923-5"></head>
+<body data-page="account">
+<header class="topbar compact"><a class="brand-lockup" href="/index.html"><img class="brand-logo" src="/assets/logos/tips-logo-black.svg" alt="TIPS"><span class="brand-caption">arquitectura<br>objetos<br>interiores</span></a><nav class="main-nav desktop-only"><a href="/index.html">Inicio</a><a href="/tienda.html">Tienda</a><a href="/arquitectura.html#proyectos">Portafolio</a><a href="/contacto.html">Contacto</a></nav><a class="btn small ghost" href="/index.html">Volver</a></header>
+<main class="auth-editorial-layout">
+  <section class="auth-editorial-panel">
+    <div class="auth-editorial-inner">
+      <p class="eyebrow">Bienvenido de nuevo</p>
+      <h1>Tu espacio,<br>siempre contigo.</h1>
+      <p class="auth-editorial-lead">Inicia sesión para continuar o crea tu cuenta para guardar tus compras y pedidos.</p>
+      <div class="auth-tabs"><button class="active" data-auth-tab="login">Iniciar sesión</button><button data-auth-tab="register">Crear cuenta</button></div>
+      <form data-auth-form="login" class="auth-form">
+        <label>Correo electrónico<input type="email" name="email" required autocomplete="email" placeholder="nombre@correo.com"></label>
+        <label>Contraseña<input type="password" name="password" required autocomplete="current-password" placeholder="Tu contraseña"></label>
+        <div class="auth-inline-note"><label class="editorial-check"><input type="checkbox"> <span>Recordarme</span></label><span>Acceso protegido por TIPS</span></div>
+        <button class="btn primary wide">Iniciar sesión <span>→</span></button>
+        <p class="form-message" data-login-message></p>
+      </form>
+      <form data-auth-form="register" class="auth-form hidden">
+        <label>Nombre completo<input name="display_name" maxlength="120" required placeholder="Tu nombre"></label>
+        <label>Correo electrónico<input type="email" name="email" required autocomplete="email" placeholder="nombre@correo.com"></label>
+        <label>Contraseña<input type="password" name="password" minlength="12" required autocomplete="new-password" placeholder="Mínimo 12 caracteres"><small>Usa al menos 12 caracteres.</small></label>
+        <label class="editorial-check"><input type="checkbox" required> <span>Acepto los términos de uso y la política de privacidad.</span></label>
+        <button class="btn primary wide">Crear cuenta <span>→</span></button><p class="form-message" data-register-message></p>
+      </form>
+      <div class="account-state hidden" data-account-state><div class="success-icon small">✓</div><h2 data-account-name></h2><p data-account-email></p><div class="actions"><a class="btn primary" href="/perfil.html">Gestionar mi cuenta</a><a class="btn ghost" href="/tienda.html">Ir a la tienda</a><button class="btn ghost" data-logout>Cerrar sesión</button></div></div>
+    </div>
+  </section>
+  <aside class="auth-editorial-visual" aria-label="Interior TIPS"><p>Espacios<br>que inspiran<br>tu día a día.</p><span>01 / 03</span></aside>
+</main>
+<script src="/frontend/usuario/js/site-settings.js?v=20260923-5" defer></script><script src="/frontend/usuario/js/app.js?v=20260923-5" defer></script><script src="/frontend/usuario/js/account-routing.js?v=20260923-5" defer></script><script src="/frontend/global/js/motion-loader.js?v=20260923-5" defer></script></body></html>

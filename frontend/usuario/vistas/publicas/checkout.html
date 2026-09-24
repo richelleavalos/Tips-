@@ -1,0 +1,30 @@
+<!doctype html>
+<!-- Checkout TIPS: conserva el contrato de datos del backend y aplica el formulario editorial aprobado. -->
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Checkout | TIPS</title>
+<link rel="stylesheet" href="/frontend/usuario/css/public.css?v=20260923-5"></head>
+<body data-page="checkout">
+<header class="topbar compact"><a class="brand-lockup" href="/index.html"><img class="brand-logo" src="/assets/logos/tips-logo-black.svg" alt="TIPS"><span class="brand-caption">arquitectura<br>objetos<br>interiores</span></a><div class="checkout-steps" aria-label="Proceso de compra"><span class="done">1&nbsp; Carrito</span><i></i><span class="active">2&nbsp; Envío</span><i></i><span>3&nbsp; Pago</span><i></i><span>4&nbsp; Confirmación</span></div><a class="secure-note" href="/tienda.html">← Volver a la tienda</a></header>
+<main class="checkout-page shell">
+  <div class="checkout-heading"><p class="eyebrow">Envío</p><h1>¿A dónde<br>enviamos tu pedido?</h1><p>Completa la información para continuar. Los datos se utilizan únicamente para procesar esta compra.</p></div>
+  <div class="demo-alert"><strong>Modo de prueba.</strong> El proveedor de pagos real aún no está definido; esta versión crea una orden y un pago simulado sin procesar una tarjeta real.</div>
+  <div class="checkout-layout">
+    <form class="checkout-form card" data-checkout-form>
+      <section><div class="form-section-title"><span>1</span><div><h2>Información de envío</h2><p>Datos de la persona que recibirá el pedido.</p></div></div><div class="form-grid">
+        <label class="full">Nombre completo<input name="customer_name" required maxlength="120" placeholder="Tu nombre"></label>
+        <label>Correo electrónico<input name="email" type="email" required maxlength="180" placeholder="nombre@correo.com"></label>
+        <label>Teléfono<input name="phone" required maxlength="40" placeholder="+503 0000-0000"></label>
+        <label class="full">Dirección<input name="address" required maxlength="240" placeholder="Calle, colonia, número, referencia"></label>
+        <label>Ciudad<input name="city" required maxlength="100" value="San Salvador"></label>
+        <label>Departamento<input name="region" maxlength="100" value="San Salvador"></label>
+        <label>País<select name="country"><option value="SV">El Salvador</option></select></label>
+        <label class="full">Notas de entrega <span class="field-optional">Opcional</span><textarea name="notes" maxlength="500" placeholder="Indicaciones que nos ayuden con la entrega"></textarea></label>
+      </div></section>
+      <section class="payment-demo"><div class="form-section-title"><span>2</span><div><h2>Método de pago</h2><p>La pasarela real se integrará después; este bloque permite probar el flujo completo.</p></div></div><div class="fake-card"><div><span>Tarjeta de prueba</span><strong>•••• •••• •••• 4242</strong></div><span>DEMO</span></div></section>
+      <div class="checkout-actions"><a class="text-button" href="/tienda.html">← Seguir comprando</a><button class="btn primary" type="submit">Continuar <span>→</span></button></div>
+      <p class="form-message" data-checkout-message></p>
+    </form>
+    <aside class="order-summary card"><p class="eyebrow">Tu pedido</p><h2>Resumen</h2><div data-checkout-items class="summary-items"><div class="tips-skeleton row"></div><div class="tips-skeleton row"></div></div><div class="summary-lines"><div><span>Subtotal</span><strong data-summary-subtotal>$0.00</strong></div><div><span>Envío</span><strong>$0.00 demo</strong></div><div class="total"><span>Total</span><strong data-summary-total>$0.00</strong></div></div><div class="checkout-eco-note"><span>⌁</span><p>Un mejor espacio también puede ser un mejor planeta. Elegimos procesos y objetos con intención.</p></div></aside>
+  </div>
+</main>
+<div class="modal-backdrop" data-order-success aria-hidden="true"><section class="success-modal order-success"><div class="success-icon">✓</div><p class="eyebrow">¡Tu pedido está en camino!</p><h2>Gracias por confiar en TIPS.</h2><p>Tu pedido <strong data-order-id></strong> fue creado correctamente en modo de prueba.</p><div class="receipt-line"><span>Total</span><strong data-order-total></strong></div><a class="btn primary wide" href="/perfil/pedidos.html">Ver mis pedidos</a><a class="text-button" href="/tienda.html">Seguir comprando</a></section></div>
+<script src="/frontend/usuario/js/site-settings.js?v=20260923-5" defer></script><script src="/frontend/usuario/js/app.js?v=20260923-5" defer></script><script src="/frontend/global/js/motion-loader.js?v=20260923-5" defer></script></body></html>
