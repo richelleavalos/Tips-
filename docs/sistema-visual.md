@@ -1,3 +1,5 @@
+> Referencia histórica de v6/v6.4. Para v6.5 prevalecen README.md y docs/v6.5/.
+
 # TIPS — sistema visual editorial v5
 
 ## Regla principal

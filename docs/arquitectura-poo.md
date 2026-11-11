@@ -1,3 +1,5 @@
+> Referencia histórica de v6/v6.4. Para v6.5 prevalecen README.md y docs/v6.5/.
+
 # Arquitectura orientada a objetos de Tips
 
 ## Objetivo
@@ -38,6 +40,8 @@ Centraliza conexiones, PRAGMAs de SQLite, transacciones, creación del esquema, 
 - `CsrfProtection`: crea y valida tokens CSRF vinculados a una sesión.
 - `SecurityPolicy`: agrupa cabeceras HTTP, CORS y validación de búsquedas.
 - `RateLimiter`: controla frecuencia de solicitudes por clave.
+- `FieldCipher`: AES-256-GCM para datos sensibles recuperables.
+- `TotpManager`: secretos y códigos TOTP para 2FA administrativo.
 
 Las funciones antiguas (`hash_password`, `verify_password`, etc.) son adaptadores hacia estos objetos para conservar el contrato existente.
 
@@ -50,7 +54,9 @@ El servidor HTTP ya tenía una arquitectura naturalmente orientada a objetos por
 3. `TipsAppRequestHandler`: cuenta del cliente e imágenes/productos.
 4. `TipsScalableRequestHandler`: extensiones del catálogo para crecimiento funcional.
 5. `TipsRoleViewRequestHandler`: autorización de vistas por rol.
-6. `RuntimeTipsRequestHandler`: comportamiento final ejecutado, incluido checkout demo.
+6. `RuntimeTipsRequestHandler`: comportamiento final ejecutado, incluido checkout transaccional y la capa de pagos.
+
+El dominio comercial añade `OrderStateMachine`, `PaymentProvider`, `SandboxPaymentProvider` y `PaymentService` para que estados, webhooks y reembolsos no dependan del JavaScript ni de una pasarela concreta.
 
 Cada método relevante tiene docstring y los módulos tienen una descripción de responsabilidad.
 
@@ -78,11 +84,13 @@ El refactor no cambia deliberadamente:
 
 - rutas HTTP públicas;
 - endpoints `/api/...`;
-- esquema de datos existente;
-- roles `user` y `admin`;
-- formato de respuestas consumidas por el frontend;
+- migración automática de bases v5;
+- roles históricos `user` y `admin`, añadiendo `superadmin`;
+- rutas previas mientras no contradigan el nuevo flujo de seguridad;
 - ubicación de la base `data/tips.db` por defecto;
 - comando de ejecución `python app.py` / `python3 app.py`.
+
+La compatibilidad mantiene el cambio obligatorio de contraseña temporal del superadmin raíz. Desde v6.4, 2FA es opcional y no condiciona el acceso administrativo.
 
 ## Principios de mantenimiento
 

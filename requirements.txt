@@ -1,1 +1,9 @@
-# Tips v1 usa únicamente la biblioteca estándar de Python en esta etapa.
+# TIPS v6 mantiene el servidor HTTP con la biblioteca estándar.
+# cryptography se usa para AES-256-GCM (Rijndael/AES autenticado) en datos sensibles.
+cryptography>=46,<47
+
+# Validación completa y miniaturas de fotografías privadas.
+Pillow>=11,<13
+
+# Planes de numeración internacional; no verifica propiedad del teléfono.
+phonenumbers>=8.13,<10

@@ -7,6 +7,7 @@ contraseñas o el manejo de transacciones.
 
 from __future__ import annotations
 
+import argparse
 from datetime import datetime, timezone
 from getpass import getpass
 from pathlib import Path
@@ -23,6 +24,7 @@ if str(ROOT_DIR) not in sys.path:
 from backend.config import Settings
 from backend.database import DatabaseManager
 from backend.security import PasswordHasher
+from backend.server import TipsRequestHandler
 
 EMAIL_RE = re.compile(r"^[^@\s]{1,120}@[^@\s]{1,180}\.[^@\s]{2,40}$")
 
@@ -52,32 +54,41 @@ class AdminAccountCreator:
             raise SystemExit("El nombre visible debe tener al menos 2 caracteres.")
         return email, name
 
-    def run(self) -> None:
+    def run(self, *, root: bool = False) -> None:
         """Ejecuta el flujo interactivo y persiste la cuenta de forma atómica."""
         self.database.initialize()
-        print("Crear / actualizar administrador de Tips")
+        role = "superadmin" if root else "admin"
+        print("Crear / actualizar " + ("cuenta raíz" if root else "administrador de Tips"))
         email, name = self._read_identity()
         password = getpass("Contraseña (mínimo 12 caracteres): ")
         password_hash = self.passwords.hash(password)
         stamp = self._now()
 
         with self.database.transaction() as db:
-            existing = db.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()
+            existing = db.execute("SELECT id,role FROM users WHERE email=?", (email,)).fetchone()
+            if root:
+                other_root = db.execute("SELECT 1 FROM users WHERE role='superadmin' AND email<>?", (email,)).fetchone()
+                if other_root:
+                    raise SystemExit("Ya existe una cuenta raíz. Usa su correo para actualizarla.")
+            elif existing and existing["role"] == "superadmin":
+                raise SystemExit("Para actualizar la cuenta raíz usa --root.")
             if existing:
                 db.execute(
                     """UPDATE users
-                    SET password_hash=?,display_name=?,role='admin',is_active=1,
+                    SET password_hash=?,display_name=?,role=?,is_active=1,must_change_password=0,
                         failed_login_count=0,locked_until=NULL,updated_at=?
                     WHERE id=?""",
-                    (password_hash, name, stamp, existing["id"]),
+                    (password_hash, name, role, stamp, existing["id"]),
                 )
-                message = "Administrador actualizado correctamente."
+                db.execute("UPDATE sessions SET revoked_at=? WHERE user_id=? AND revoked_at IS NULL", (stamp, existing["id"]))
+                TipsRequestHandler._invalidate_recovery(db, existing["id"])
+                message = "Cuenta actualizada correctamente."
             else:
                 db.execute(
                     """INSERT INTO users(
                         email,password_hash,display_name,role,is_active,created_at,updated_at
-                    ) VALUES(?,?,?,'admin',1,?,?)""",
-                    (email, password_hash, name, stamp, stamp),
+                    ) VALUES(?,?,?,?,1,?,?)""",
+                    (email, password_hash, name, role, stamp, stamp),
                 )
                 message = "Administrador creado correctamente."
 
@@ -88,7 +99,9 @@ class AdminAccountCreator:
 
 def main() -> None:
     """Crea el objeto del comando usando la configuración actual y lo ejecuta."""
-    AdminAccountCreator(Settings.load()).run()
+    parser = argparse.ArgumentParser(description="Provisiona una cuenta administrativa de TIPS.")
+    parser.add_argument("--root", action="store_true", help="Crea o actualiza la cuenta raíz.")
+    AdminAccountCreator(Settings.load()).run(root=parser.parse_args().root)
 
 
 if __name__ == "__main__":
