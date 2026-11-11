@@ -1,0 +1,78 @@
+/* One duration for cross-document views and in-page tabs. Opacity only. */
+@view-transition { navigation: auto; }
+::view-transition { pointer-events:none; }
+:root { --tips-crossfade-duration: 500ms; }
+::view-transition-old(root), ::view-transition-new(root) {
+  animation-duration: var(--tips-crossfade-duration);
+  animation-timing-function: ease-in-out;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) { animation-name: tips-view-out; }
+::view-transition-new(root) { animation-name: tips-view-in; }
+@keyframes tips-view-out { from {opacity:1} to {opacity:0} }
+@keyframes tips-view-in { from {opacity:0} to {opacity:1} }
+.tips-fallback-enter { animation: tips-view-in var(--tips-crossfade-duration) ease-in-out both; }
+.tips-view-snapshot { position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:2147483645;background:var(--bg,#f7f7f2); }
+.tips-view-snapshot.leaving { animation:tips-view-out var(--tips-crossfade-duration) ease-in-out both; }
+@media (prefers-reduced-motion: reduce) {
+  @view-transition { navigation: none; }
+  ::view-transition-old(root), ::view-transition-new(root), .tips-fallback-enter, .tips-view-snapshot.leaving { animation-duration:0s!important; }
+}
+
+.tips-icon { display:inline-block;vertical-align:middle;width:20px;height:20px;min-width:20px;flex-shrink:0; }
+.user-menu-trigger .tips-icon {width:14px;height:14px;min-width:14px;}
+.admin-chevron .admin-svg {width:14px;height:14px;}
+
+.cart-item-thumb img,.summary-thumb img {display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit;}
+button:disabled {cursor:not-allowed;}
+
+/* Preserve legibility in narrow activity/report tables; scroll the table only. */
+.ops-table {max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;}
+.ops-table table {min-width:680px;}
+.ops-top img {width:54px;height:62px;object-fit:contain;flex-shrink:0;}
+.ops-top a,.ops-top button {min-height:40px;display:inline-flex;align-items:center;justify-content:center;}
+
+.project-main-visual img,.project-thumbs img {width:100%;height:100%;object-fit:cover;display:block;}
+.project-thumbs[hidden],.project-nav [hidden] {display:none!important;}
+.project-thumbs button {min-height:44px;overflow:hidden;}
+.project-thumbs button.active {outline:2px solid var(--forest,#173d2b);outline-offset:2px;}
+.footer-grid a,.section-head a,.user-card-head a {min-height:24px;display:inline-flex;align-items:center;}
+
+/* Overlays keep their position while their panel and backdrop dissolve. */
+.modal-backdrop,.cart-drawer,.admin-modal-layer {transition:opacity var(--tips-crossfade-duration) ease-in-out;}
+body .modal-backdrop.is-open .quick-modal,body .modal-backdrop.is-open .success-modal,
+body .cart-drawer.is-open .cart-panel,body .admin-modal-layer.open .admin-modal {
+  animation:tips-view-in var(--tips-crossfade-duration) ease-in-out both;
+}
+body[data-operations] dialog {opacity:0;transition:opacity var(--tips-crossfade-duration),display var(--tips-crossfade-duration) allow-discrete,overlay var(--tips-crossfade-duration) allow-discrete;}
+body[data-operations] dialog[open] {opacity:1;}
+@starting-style {body[data-operations] dialog[open] {opacity:0;}}
+@media(prefers-reduced-motion:reduce){
+  body .modal-backdrop.is-open .quick-modal,body .modal-backdrop.is-open .success-modal,
+  body .cart-drawer.is-open .cart-panel,body .admin-modal-layer.open .admin-modal,
+  body[data-operations] dialog,.modal-backdrop,.cart-drawer,.admin-modal-layer {animation:none!important;transition:none!important;}
+}
+
+.cart-drawer {transition:opacity var(--tips-crossfade-duration) ease-in-out,visibility 0s linear var(--tips-crossfade-duration);}
+.cart-drawer.is-open {transition-delay:0s;}
+.cart-drawer .cart-panel {transform:none;transition:none;will-change:auto;}
+.cart-drawer.is-open .cart-panel {transform:none;}
+@media(max-width:640px){.client-trust-row {flex-wrap:wrap;overflow:visible;}.project-nav {flex-wrap:wrap;}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important;}}
+/* Compact controls remain separate at 320 px and keep their touch targets. */
+@media(max-width:980px){
+  .store-toolbar.mobile-only {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:end;gap:14px;}
+  .store-toolbar label {display:grid;gap:4px;min-width:0;font-size:.79rem;}
+  .store-toolbar select,.store-toolbar button {width:100%;min-height:44px;}
+}
+@media(max-width:480px){
+  .quick-modal .quick-visual {min-height:0;height:clamp(148px,42vw,200px);}
+  .quick-modal .quick-copy h2 {font-size:clamp(1.65rem,7vw,2.25rem);line-height:1.04;overflow-wrap:anywhere;}
+  .quick-modal .quick-copy {padding:20px 18px 24px;}
+  .quick-modal .modal-close {min-width:44px;min-height:44px;}
+}
+
+.user-menu-close,.user-mobile-menu,.admin-mobile-menu {min-width:44px;min-height:44px;}
+
+.ops-table-help {display:none;color:#566350;font-size:.82rem;}
+@media(max-width:1100px){.ops-table-help {display:block;}}
