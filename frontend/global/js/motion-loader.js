@@ -5,6 +5,9 @@
 (() => {
   "use strict";
 
+  // La administración navega sin desvanecer ni bloquear el contenido operativo.
+  if (document.body.classList.contains("admin-area")) return;
+
   const localPreview = ["127.0.0.1", "localhost"].includes(location.hostname)
     && new URLSearchParams(location.search).get("motion-preview") === "1";
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches && !localPreview) {
@@ -18,11 +21,11 @@
 
     const styles = document.createElement("link");
     styles.rel = "stylesheet";
-    styles.href = "/frontend/global/css/motion.css?v=20260923-5";
+    styles.href = "/frontend/global/css/motion.css?v=6.6-20261110e";
     styles.onload = () => document.documentElement.classList.add("motion-styles-ready");
     document.head.append(styles);
 
-    import("/frontend/global/js/motion-runtime.js?v=20260923-5").catch(() => {
+    import("/frontend/global/js/motion-runtime.js?v=6.6-20261110e").catch(() => {
       document.documentElement.classList.add("motion-load-failed");
     });
   };

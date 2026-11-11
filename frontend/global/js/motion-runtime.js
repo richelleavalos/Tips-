@@ -123,27 +123,11 @@ function enableParallax() {
   }, { passive: true });
 }
 
-function enablePageTransitions() {
-  document.addEventListener("click", event => {
-    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    const link = event.target.closest("a[href]");
-    if (!link || link.target === "_blank" || link.hasAttribute("download")) return;
-    const href = link.getAttribute("href") || "";
-    if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) return;
-    const destination = new URL(link.href, location.href);
-    if (destination.origin !== location.origin || destination.href === location.href) return;
-    event.preventDefault();
-    body.classList.add("motion-page-exit");
-    setTimeout(() => { location.href = destination.href; }, 230);
-  });
-  window.addEventListener("pageshow", () => body.classList.remove("motion-page-exit"));
-}
-
 root.classList.add("motion-enabled");
 body.classList.add("motion-runtime-ready");
 prepareNode(body);
 mutationObserver.observe(body, { childList: true, subtree: true });
 document.addEventListener("pointerdown", addRipple, { passive: true });
 enableParallax();
-enablePageTransitions();
-requestAnimationFrame(() => body.classList.add("motion-page-enter"));
+
+

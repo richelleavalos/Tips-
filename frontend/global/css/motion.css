@@ -14,8 +14,8 @@
 html.motion-enabled { scroll-behavior: smooth; }
 
 /* Entrada/salida segura: solo opacidad, sin transform, filter ni clip-path. */
-body.motion-page-enter { animation: motionPageFadeIn .28s ease both; }
-body.motion-page-exit { animation: motionPageFadeOut .16s ease both; pointer-events: none; }
+
+
 
 .motion-item {
   opacity: 0;
