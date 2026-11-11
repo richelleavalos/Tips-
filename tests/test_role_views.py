@@ -11,7 +11,7 @@ from urllib.request import HTTPRedirectHandler, HTTPCookieProcessor, Request, bu
 from backend.config import Settings
 from backend.database import initialize, transaction
 from backend.runtime import create_server
-from backend.security import hash_password
+from backend.security import FieldCipher, TotpManager, hash_password
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -30,9 +30,11 @@ class RoleViewTests(unittest.TestCase):
         initialize(self.settings)
         stamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
         with transaction(self.settings) as db:
+            self.admin_totp_secret = TotpManager.new_secret()
+            encrypted_2fa = FieldCipher(self.settings.field_encryption_key).encrypt(self.admin_totp_secret, aad="user-2fa")
             db.execute(
-                "INSERT INTO users(email,password_hash,display_name,role,is_active,created_at,updated_at) VALUES(?,?,?,'admin',1,?,?)",
-                ("admin@example.com", hash_password("AdminSeguro123!"), "Admin Tips", stamp, stamp),
+                "INSERT INTO users(email,password_hash,display_name,role,two_factor_secret_encrypted,two_factor_enabled,is_active,created_at,updated_at) VALUES(?,?,?,'admin',?,1,1,?,?)",
+                ("admin@example.com", hash_password("AdminSeguro123!"), "Admin Tips", encrypted_2fa, stamp, stamp),
             )
             db.execute(
                 "INSERT INTO product_images(product_id,path,alt_text,sort_order,created_at) VALUES(1,'assets/uploads/products/1/demo.webp','Demo',0,?)",
@@ -68,7 +70,26 @@ class RoleViewTests(unittest.TestCase):
 
     def login(self, opener, email, password):
         _, token = self.get_json(opener, "/api/csrf")
-        return self.post_json(opener, "/api/auth/login", {"email": email, "password": password}, token["csrf_token"])
+        status, payload = self.post_json(opener, "/api/auth/login", {"email": email, "password": password}, token["csrf_token"])
+        if payload.get("two_factor_required"):
+            code = TotpManager().code(self.admin_totp_secret)
+            return self.post_json(opener, "/api/auth/2fa/verify-login", {"challenge_token": payload["challenge_token"], "code": code}, token["csrf_token"])
+        return status, payload
+
+
+    def test_admin_without_2fa_can_enter_panel(self):
+        stamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+        with transaction(self.settings) as db:
+            db.execute(
+                "INSERT INTO users(email,password_hash,display_name,role,two_factor_enabled,is_active,must_change_password,created_at,updated_at) VALUES(?,?,?,'admin',0,1,0,?,?)",
+                ("admin.no2fa@example.com", hash_password("AdminSin2FA123!"), "Admin sin 2FA", stamp, stamp),
+            )
+        admin = self.opener()
+        status, login = self.login(admin, "admin.no2fa@example.com", "AdminSin2FA123!")
+        self.assertEqual(status, 200)
+        self.assertFalse(login.get("two_factor_setup_required", False))
+        with admin.open(self.base + "/admin/", timeout=5) as response:
+            self.assertEqual(response.status, 200)
 
     def test_private_views_are_isolated_by_role(self):
         guest = self.opener()
@@ -77,7 +98,7 @@ class RoleViewTests(unittest.TestCase):
 
         user = self.opener()
         _, token = self.get_json(user, "/api/csrf")
-        status, _ = self.post_json(user, "/api/auth/register", {"display_name": "Cliente", "email": "cliente@example.com", "password": "ClienteSeguro123!"}, token["csrf_token"])
+        status, _ = self.post_json(user, "/api/auth/register", {"display_name": "Cliente", "email": "cliente@example.com", "password": "ClienteSeguro123!", "phone":"71234567", "country_code":"+503"}, token["csrf_token"])
         self.assertEqual(status, 201)
         self.assertEqual(self.redirect_location(user, "/admin/"), "/user/")
         with user.open(self.base + "/user/", timeout=5) as response:
@@ -103,7 +124,8 @@ class RoleViewTests(unittest.TestCase):
 
     def test_public_views_keep_their_urls_after_reorganization(self):
         opener = self.opener()
-        for path in ("/", "/index.html", "/tienda.html", "/arquitectura.html", "/contacto.html", "/checkout.html", "/merchandise.html", "/proyecto.html", "/cuenta.html"):
+        self.assertEqual(self.redirect_location(opener,"/arquitectura.html"),"/servicios-de-diseno.html")
+        for path in ("/", "/index.html", "/tienda.html", "/servicios-de-diseno.html", "/contacto.html", "/checkout.html", "/merchandise.html", "/proyecto.html", "/cuenta.html"):
             with opener.open(self.base + path, timeout=5) as response:
                 self.assertEqual(response.status, 200, path)
                 self.assertIn("text/html", response.headers.get("Content-Type", ""), path)

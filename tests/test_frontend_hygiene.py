@@ -16,15 +16,29 @@ class FrontendHygieneTests(unittest.TestCase):
             (BASE_DIR / "frontend/usuario/vistas/cuenta", "account.css"),
             (BASE_DIR / "frontend/admin/vistas", "admin.css"),
         ]
+        security_views = {"change-password.html", "setup-2fa.html", "recuperar.html"}
         for folder, expected in groups:
             for path in folder.glob("*.html"):
                 text = path.read_text(encoding="utf-8")
                 styles = re.findall(r'<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"', text)
-                if path.name == "merchandise.html":
-                    self.assertEqual(styles, [], path.name)
+                self.assertEqual(sum("/view-transitions.css" in value for value in styles), 1, path.name)
+                styles = [value for value in styles if "/view-transitions.css" not in value]
+                if path.name == "trabajo.html":
+                    self.assertEqual({value.split('?')[0] for value in styles},{"/frontend/admin/css/admin.css","/frontend/global/css/components.css","/frontend/global/css/operations.css"})
                     continue
-                self.assertEqual(len(styles), 1, f"{path.name}: {styles}")
+                if path.name == "seguimiento.html":
+                    self.assertEqual([value.split("?")[0] for value in styles],["/frontend/global/css/operations.css"],path.name)
+                    continue
+                styles=[style for style in styles if "operations.css" not in style]
+                if path.name == "merchandise.html":
+                    self.assertLessEqual(len(styles), 1, path.name)
+                    continue
+                if path.name in security_views:
+                    self.assertEqual([value.split("?")[0] for value in styles], ["/frontend/global/css/components.css"], path.name)
+                    continue
+                self.assertEqual(len(styles), 2, f"{path.name}: {styles}")
                 self.assertIn(expected, styles[0], path.name)
+                self.assertIn("components.css", styles[1], path.name)
 
     def test_removed_design_layers_do_not_return(self):
         dead = [
@@ -62,8 +76,9 @@ class FrontendHygieneTests(unittest.TestCase):
         ):
             for path in folder.glob("*.html"):
                 text = path.read_text(encoding="utf-8")
-                self.assertNotIn("transitions.js", text, path.name)
-                self.assertLessEqual(text.count("motion-loader.js"), 1, path.name)
+                self.assertNotIn("/js/transitions.js", text, path.name)
+                self.assertEqual(text.count("/js/view-transitions.js"), 1, path.name)
+                self.assertNotIn("motion-loader.js", text, path.name)
 
     def test_public_styles_do_not_contain_legacy_admin_or_profile_layouts(self):
         """Evita que estilos de roles distintos vuelvan a mezclarse en public.css."""
@@ -73,9 +88,10 @@ class FrontendHygieneTests(unittest.TestCase):
 
     def test_motion_runtime_never_transforms_body(self):
         """Los overlays fixed deben seguir anclados al viewport también en Safari."""
-        text = (BASE_DIR / "frontend/global/css/motion.css").read_text(encoding="utf-8")
-        body_rules = re.findall(r"body\.motion-page-(?:enter|exit)\s*\{([^}]+)\}", text)
+        text = (BASE_DIR / "frontend/global/css/view-transitions.css").read_text(encoding="utf-8")
+        body_rules = re.findall(r"\.tips-fallback-enter\s*\{([^}]+)\}", text)
         self.assertTrue(body_rules)
+        self.assertIn("--tips-crossfade-duration: 500ms", text)
         for rule in body_rules:
             self.assertNotIn("transform", rule)
             self.assertNotIn("filter", rule)

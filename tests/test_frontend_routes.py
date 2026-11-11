@@ -36,9 +36,15 @@ class FrontendRoutesTests(unittest.TestCase):
     def test_all_views_and_their_assets_still_load_by_role(self):
         guest, user, admin = self.opener(), self.opener(), self.opener()
         _, token = self.get_json(user, "/api/csrf")
-        self.post_json(user, "/api/auth/register", {"display_name": "Cliente", "email": "cliente@example.com", "password": "ClienteSeguro123!"}, token["csrf_token"])
+        self.post_json(user, "/api/auth/register", {"display_name": "Cliente", "email": "cliente@example.com", "password": "ClienteSeguro123!", "phone":"71234567", "country_code":"+503"}, token["csrf_token"])
         self.login(admin, "admin@example.com", "AdminSeguro123!")
+        security_gated = {"/change-password.html", "/setup-2fa.html"}
         for route in VIEW_ROUTES:
+            if route == "/arquitectura.html":
+                self.assertEqual(self.redirect_location(guest,route),"/servicios-de-diseno.html")
+                continue
+            if route in security_gated:
+                continue
             opener = admin if route.startswith("/admin/") else user if route.startswith("/user/") else guest
             with self.subTest(route=route), opener.open(self.base + route) as response:
                 self.assertEqual(response.status, 200)

@@ -10,7 +10,7 @@ from urllib.request import HTTPCookieProcessor, Request, build_opener
 from backend.config import Settings
 from backend.database import initialize, transaction
 from backend.runtime import create_server
-from backend.security import hash_password
+from backend.security import FieldCipher, TotpManager, hash_password
 
 
 class AdminApiTests(unittest.TestCase):
@@ -30,10 +30,12 @@ class AdminApiTests(unittest.TestCase):
         )
         initialize(self.settings)
         stamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+        self.admin_totp_secret = TotpManager.new_secret()
         with transaction(self.settings) as db:
+            encrypted_2fa = FieldCipher(self.settings.field_encryption_key).encrypt(self.admin_totp_secret, aad="user-2fa")
             db.execute(
-                "INSERT INTO users(email,password_hash,display_name,role,is_active,created_at,updated_at) VALUES(?,?,?,'admin',1,?,?)",
-                ("admin@example.com", hash_password("AdminSeguro123!"), "Admin Tips", stamp, stamp),
+                "INSERT INTO users(email,password_hash,display_name,role,two_factor_secret_encrypted,two_factor_enabled,is_active,created_at,updated_at) VALUES(?,?,?,'admin',?,1,1,?,?)",
+                ("admin@example.com", hash_password("AdminSeguro123!"), "Admin Tips", encrypted_2fa, stamp, stamp),
             )
         self.server = create_server(self.settings)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
@@ -72,7 +74,15 @@ class AdminApiTests(unittest.TestCase):
             csrf,
         )
         self.assertEqual(status, 200)
+        self.assertTrue(login["two_factor_required"])
+        status, login = self.post_json(
+            "/api/auth/2fa/verify-login",
+            {"challenge_token": login["challenge_token"], "code": TotpManager().code(self.admin_totp_secret)},
+            csrf,
+        )
+        self.assertEqual(status, 200)
         self.assertEqual(login["user"]["role"], "admin")
+        csrf = login["csrf_token"]
 
         status, overview = self.get_json("/api/admin/overview")
         self.assertEqual(status, 200)

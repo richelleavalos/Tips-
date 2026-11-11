@@ -56,7 +56,7 @@ class ApiFlowTests(unittest.TestCase):
         with self.opener.open(request, timeout=5) as response:
             return response.status, json.loads(response.read().decode("utf-8"))
 
-    def test_customer_can_register_add_product_and_complete_demo_checkout(self):
+    def test_customer_can_register_add_product_and_complete_pickup_request(self):
         status, products = self.get_json("/api/products")
         self.assertEqual(status, 200)
         self.assertGreaterEqual(len(products["items"]), 8)
@@ -77,12 +77,13 @@ class ApiFlowTests(unittest.TestCase):
             {
                 "display_name": "Cliente Prueba",
                 "email": "cliente@example.com",
-                "password": "UnaClaveSegura123!",
+                "password": "UnaClaveSegura123!", "phone":"71234567", "country_code":"+503",
             },
             csrf,
         )
         self.assertEqual(status, 201)
         self.assertEqual(registration["user"]["role"], "user")
+        csrf = registration["csrf_token"]
 
         status, cart = self.post_json(
             "/api/cart/items",
@@ -97,9 +98,10 @@ class ApiFlowTests(unittest.TestCase):
         self.assertEqual(len(cart["items"]), 1)
         self.assertEqual(cart["items"][0]["quantity"], 2)
 
-        status, order = self.post_json(
-            "/api/checkout/mock",
+        status, intent = self.post_json(
+            "/api/checkout/create",
             {
+                "idempotency_key":"regression-order-0001",
                 "customer_name": "Cliente Prueba",
                 "email": "cliente@example.com",
                 "phone": "+503 7000-0000",
@@ -114,9 +116,10 @@ class ApiFlowTests(unittest.TestCase):
             csrf,
         )
         self.assertEqual(status, 201)
-        self.assertEqual(order["status"], "paid")
-        self.assertEqual(order["payment_provider"], "mock")
-        self.assertTrue(order["public_id"].startswith("TIPS-"))
+        self.assertEqual(intent["order_status"], "received")
+        self.assertNotIn("payment_provider", intent)
+        self.assertTrue(intent["public_id"].startswith("TIPS-"))
+        self.assertIn("tracking_url",intent)
 
         status, final_cart = self.get_json("/api/cart")
         self.assertEqual(status, 200)
@@ -125,12 +128,13 @@ class ApiFlowTests(unittest.TestCase):
     def test_customer_can_manage_profile_password_and_deactivate_account(self):
         _, csrf_payload = self.get_json("/api/csrf")
         csrf = csrf_payload["csrf_token"]
-        status, _ = self.post_json(
+        status, registration = self.post_json(
             "/api/auth/register",
-            {"display_name": "Cliente Perfil", "email": "perfil@example.com", "password": "ClaveInicial123!"},
+            {"display_name": "Cliente Perfil", "email": "perfil@example.com", "password": "ClaveInicial123!", "phone":"71234567", "country_code":"+503"},
             csrf,
         )
         self.assertEqual(status, 201)
+        csrf = registration["csrf_token"]
 
         status, account = self.get_json("/api/account")
         self.assertEqual(status, 200)
@@ -139,7 +143,7 @@ class ApiFlowTests(unittest.TestCase):
 
         status, updated = self.post_json(
             "/api/account/profile",
-            {"display_name": "Cliente Actualizado", "email": "perfil@example.com", "current_password": ""},
+            {"display_name": "Cliente Actualizado", "email": "perfil@example.com", "current_password": "", "phone":"71234567", "country_code":"+503"},
             csrf,
         )
         self.assertEqual(status, 200)
