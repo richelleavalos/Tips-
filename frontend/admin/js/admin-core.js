@@ -83,6 +83,10 @@
    */
   function icon(name) {
     const paths = {
+      menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+      chevron: '<path d="m6 9 6 6 6-6"/>',
+      calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18M8 15h1M15 15h1"/>',
+      activity: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
       home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9 20v-6h6v6"/>',
       orders: '<path d="M6 4h12l1 16H5L6 4Z"/><path d="M9 8a3 3 0 0 0 6 0"/>',
       products: '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4.5 7.8 7.5 4.3 7.5-4.3"/><path d="M12 12v9"/>',
@@ -111,27 +115,28 @@
   /** Construye la navegación lateral compartida por todas las vistas admin. */
   function navMarkup(active) {
     const primary = [
-      ["dashboard", "index.html", "home", "Resumen"],
-      ["pedidos", "pedidos.html", "orders", "Pedidos"],
-      ["productos", "productos.html", "products", "Productos"],
-      ["inventario", "inventario.html", "inventory", "Inventario"],
-      ["clientes", "clientes.html", "clients", "Clientes"],
-      ["proyectos", "proyectos.html", "portfolio", "Portafolio"],
-      ["promociones", "promociones.html", "promo", "Promociones"],
-      ["cotizaciones", "cotizaciones.html", "quote", "Cotizaciones"],
-      ["ventas", "ventas.html", "sales", "Ventas"],
-      ["reportes", "reportes.html", "reports", "Reportes"],
+      ["dashboard", "/admin/", "home", "Resumen"],
+      ["pedidos", "/admin/pedidos.html", "orders", "Pedidos"],
+      ["cotizaciones", "/admin/cotizaciones.html", "quote", "Servicios de diseño"],
+      ["calendario", "/admin/calendario.html", "calendar", "Calendario"],
+      ["reportes", "/admin/reportes.html", "reports", "Reportes"],
+      ["actividad", "/admin/actividad.html", "activity", "Actividad"],
+      ["productos", "/admin/productos.html", "products", "Productos"],
+      ["inventario", "/admin/inventario.html", "inventory", "Inventario"],
+      ["clientes", "/admin/clientes.html", "clients", "Clientes"],
+      ["proyectos", "/admin/proyectos.html", "portfolio", "Portafolio"],
+      ["promociones", "/admin/promociones.html", "promo", "Promociones"],
     ];
     const secondary = [
-      ["configuracion", "configuracion.html", "settings", "Configuración"],
-      ["usuarios", "usuarios.html", "users", "Usuarios"],
-      ["cuenta", "cuenta.html", "account", "Mi cuenta"],
+      ["configuracion", "/admin/configuracion.html", "settings", "Configuración"],
+      ["usuarios", "/admin/usuarios.html", "users", "Usuarios"],
+      ["cuenta", "/admin/cuenta.html", "account", "Mi cuenta"],
     ];
 
     return `
       <a class="admin-side-brand" href="index.html" aria-label="TIPS Administración">
         <span class="admin-brand-word">TIPS</span>
-        <span class="admin-brand-lines">ARQUITECTURA<br>OBJETOS<br>INTERIORES</span>
+        <span class="admin-brand-lines">DISEÑO<br>OBJETOS<br>INTERIORES</span>
       </a>
       <nav class="admin-nav-scroll" aria-label="Administración">
         <div class="admin-nav-list admin-nav-primary">${primary.map(item => navItem(item, active)).join("")}</div>
@@ -149,26 +154,33 @@
 
   /** Monta sidebar, topbar y eventos globales de la aplicación administrativa. */
   function mountShell() {
-    const page = document.body.dataset.adminPage || "dashboard";
+    const file=location.pathname.split('/').pop().replace('.html','');
+    const routeQuery=new URLSearchParams(location.search);
+    const contextual=file==='trabajo'?(routeQuery.has('client')?'clientes':routeQuery.get('kind')==='quote'?'cotizaciones':routeQuery.get('kind')==='order'?'pedidos':null):null;
+    const page = document.body.dataset.adminPage || contextual || ({index:'dashboard',trabajo:'dashboard',ventas:'reportes','':'dashboard'}[file]||file);
+    document.body.dataset.adminPage=page;
+    const sectionNames={dashboard:'Resumen',pedidos:'Pedidos',cotizaciones:'Servicios de diseño',calendario:'Calendario',reportes:'Reportes',actividad:'Actividad',productos:'Productos',inventario:'Inventario',clientes:'Clientes',proyectos:'Portafolio',promociones:'Promociones',usuarios:'Usuarios y roles',configuracion:'Configuración',cuenta:'Mi cuenta'};
+    document.title=(sectionNames[page]||'Administración')+' | TIPS';
     const sidebar = $("[data-admin-sidebar]");
-    if (sidebar) sidebar.innerHTML = navMarkup(page);
+    if (sidebar) {sidebar.id="admin-navigation";sidebar.innerHTML = navMarkup(page);}
 
     const top = $("[data-admin-top]");
     if (top) {
       top.innerHTML = `
         <div class="admin-top-left">
-          <button class="admin-mobile-menu" type="button" data-admin-menu aria-label="Abrir menú">☰</button>
+          <button class="admin-mobile-menu" type="button" data-admin-menu aria-label="Abrir menú" aria-expanded="false" aria-controls="admin-navigation">${icon("menu")}</button>
+          <div class="admin-breadcrumb"><span>Administración</span><i>/</i><strong>${esc(sectionNames[page]||'Resumen')}</strong></div>
           <form class="admin-global-search" data-admin-global-search role="search">
             ${icon("search")}
-            <input type="search" name="search" placeholder="Buscar productos, pedidos, clientes..." aria-label="Buscar en administración">
+            <input type="search" name="search" placeholder="Buscar productos por nombre o SKU" aria-label="Buscar productos">
           </form>
         </div>
         <div class="admin-top-actions">
-          <button class="admin-icon admin-bell" type="button" data-admin-alerts aria-label="Alertas">${icon("bell")}<span class="admin-count hidden" data-admin-alert-count>0</span></button>
+          <button class="admin-icon admin-bell" type="button" data-admin-alerts aria-label="Notificaciones" aria-expanded="false">${icon("bell")}<span class="admin-count hidden" data-admin-alert-count>0</span></button>
           <button class="admin-profile-button" type="button" data-admin-profile>
             <span class="admin-avatar" data-admin-avatar>A</span>
             <span class="admin-profile-copy"><strong data-admin-profile-name>Administrador</strong><small>Administración</small></span>
-            <span class="admin-chevron">⌄</span>
+            <span class="admin-chevron">${icon("chevron")}</span>
           </button>
         </div>
         <div class="admin-popover" data-admin-popover>
@@ -177,17 +189,20 @@
           <button type="button" data-admin-pop-logout>Cerrar sesión</button>
         </div>
         <div class="admin-alert-popover" data-admin-alert-popover>
-          <div class="admin-alert-popover-head"><strong>Alertas</strong><button type="button" data-admin-alert-close>×</button></div>
+          <div class="admin-alert-popover-head"><strong>Notificaciones</strong><button type="button" data-admin-alert-close>×</button></div>
           <div data-admin-alert-list></div>
         </div>`;
     }
 
-    $("[data-admin-menu]")?.addEventListener("click", () => document.body.classList.toggle("admin-menu-open"));
+    const menuButton=$("[data-admin-menu]");
+    menuButton?.addEventListener("click", () => {const open=document.body.classList.toggle("admin-menu-open");menuButton.setAttribute('aria-expanded',String(open));});
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'){document.body.classList.remove('admin-menu-open');menuButton?.setAttribute('aria-expanded','false');}});
 
     document.addEventListener("click", event => {
       const clickedOutsideMenu = !event.target.closest(".admin-side") && !event.target.closest("[data-admin-menu]");
       if (window.innerWidth <= 760 && document.body.classList.contains("admin-menu-open") && clickedOutsideMenu) {
         document.body.classList.remove("admin-menu-open");
+        menuButton?.setAttribute("aria-expanded","false");
       }
     });
 
@@ -271,23 +286,17 @@
   }
 
   /** Carga las métricas base y actualiza badge, identidad y alertas. */
+  async function syncNotifications(){
+    const data=await api('/api/ops/notifications');
+    const badge=$('[data-admin-alert-count]');badge.textContent=data.unread;badge.classList.toggle('hidden',!data.unread);
+    const list=$('[data-admin-alert-list]');
+    list.innerHTML=data.items.length?data.items.map(n=>`<button type="button" class="admin-notice-item" data-notice-id="${n.id}"><span class="notice-dot ${n.is_read?'read':''}"></span><span><strong>${esc(n.title)}</strong><small>${new Intl.DateTimeFormat('es-SV',{dateStyle:'short',timeStyle:'short',timeZone:'America/El_Salvador'}).format(new Date(n.created_at))}</small></span></button>`).join(''):'<p class="admin-alert-popover-empty">No tienes notificaciones pendientes.</p>';
+    list.querySelectorAll('[data-notice-id]').forEach(button=>{button.onclick=async()=>{try{const n=data.items.find(x=>x.id===Number(button.dataset.noticeId));await api('/api/ops/read',{method:'POST',body:JSON.stringify({id:n.id})});location.href=n.url;}catch(error){toast(error.message,'error');}};});
+  }
   async function loadAlerts() {
     try {
-      const data = await api("/api/admin/overview");
-      setIdentity(data.user);
-      const alerts = data.alerts || [];
-      const count = alerts.reduce((sum, item) => sum + Number(item.count || 0), 0);
-      const badge = $("[data-admin-alert-count]");
-      if (badge) {
-        badge.textContent = count;
-        badge.classList.toggle("hidden", !count);
-      }
-      renderAlertPopover(alerts);
-      return data;
-    } catch (error) {
-      if (error.status === 401 || error.status === 403) showAuth();
-      throw error;
-    }
+      const data = await api('/api/admin/overview');setIdentity(data.user);await syncNotifications();return data;
+    } catch(error){if(error.status===401||error.status===403)showAuth();throw error;}
   }
 
   /** Presenta una pantalla coherente cuando el visitante no es administrador. */
@@ -337,6 +346,11 @@
   }
 
   mountShell();
+  const bell=$('[data-admin-alerts]'),noticePanel=$('[data-admin-alert-popover]');
+  bell?.addEventListener('click',()=>{const open=noticePanel.classList.toggle('open');bell.setAttribute('aria-expanded',String(open));$('[data-admin-popover]')?.classList.remove('open');});
+  $('[data-admin-alert-close]')?.addEventListener('click',()=>{noticePanel.classList.remove('open');bell.setAttribute('aria-expanded','false');});
+  document.addEventListener('click',e=>{if(!e.target.closest('[data-admin-alert-popover],[data-admin-alerts]')){noticePanel?.classList.remove('open');bell?.setAttribute('aria-expanded','false');}});
+  setInterval(()=>{if(!document.hidden)syncNotifications().catch(()=>{});},30000);
   window.TipsAdmin = {
     $,
     $$,
