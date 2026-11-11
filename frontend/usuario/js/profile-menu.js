@@ -50,8 +50,10 @@
     }
     const user = result.user;
     const initial = (user.display_name || user.email || "U").trim().charAt(0).toUpperCase();
-    const accountHref = user.role === "admin" ? "/admin/cuenta.html" : "/user/";
-    slot.innerHTML = `<div class="user-menu"><button class="user-menu-trigger" type="button" aria-expanded="false"><span class="user-avatar">${initial}</span><span>${escapeHtml(user.display_name || "Mi cuenta")}</span><span>⌄</span></button><div class="user-menu-panel"><div class="user-menu-identity"><strong>${escapeHtml(user.display_name || "Usuario")}</strong><small>${escapeHtml(user.email || "")}</small></div><a href="${accountHref}">Mi cuenta</a>${user.role === "admin" ? '<a href="/admin/">Administración</a>' : '<a href="/user/pedidos.html">Mis pedidos</a>'}<button type="button" data-profile-logout>Cerrar sesión</button></div></div>`;
+    const isAdmin = ["admin", "superadmin"].includes(user.role);
+    let accountHref = isAdmin ? "/admin/cuenta.html" : "/user/";
+    if (user.must_change_password) accountHref = "/change-password.html";
+    slot.innerHTML = `<div class="user-menu"><button class="user-menu-trigger" type="button" aria-expanded="false"><span class="user-avatar">${initial}</span><span>${escapeHtml(user.display_name || "Mi cuenta")}</span><span><svg class="tips-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span></button><div class="user-menu-panel"><div class="user-menu-identity"><strong>${escapeHtml(user.display_name || "Usuario")}</strong><small>${escapeHtml(user.email || "")}</small></div><a href="${accountHref}">Mi cuenta</a>${isAdmin ? '<a href="/admin/">Administración</a>' : '<a href="/user/pedidos.html">Mis pedidos</a>'}<button type="button" data-profile-logout>Cerrar sesión</button></div></div>`;
     const menu = $(".user-menu", slot), trigger = $(".user-menu-trigger", slot);
     trigger.addEventListener("click", event => {
       event.stopPropagation();

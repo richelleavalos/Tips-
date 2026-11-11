@@ -30,7 +30,7 @@
     if (/^#[0-9a-f]{6}$/i.test(theme.secondary || "")) root.style.setProperty("--brown", theme.secondary);
     if (/^#[0-9a-f]{6}$/i.test(theme.surface || "")) root.style.setProperty("--paper", theme.surface);
     const variant = ["orange", "green", "black", "brown"].includes(theme.logo_variant) ? theme.logo_variant : "orange";
-    $$(".brand-logo").forEach(image => { image.src = `assets/logos/tips-logo-${variant}.svg`; });
+    $$(".brand-logo").forEach(image => { image.src = `/assets/logos/tips-logo-${variant}.svg`; });
   }
 
   function setText(selector, value) {

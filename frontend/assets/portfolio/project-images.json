@@ -1,0 +1,32 @@
+[
+  {
+    "slug": "casa-horizonte",
+    "path": "assets/portfolio/casa-horizonte.webp",
+    "alt": "Sala y comedor de una vivienda renovada, conectados a un jardín arbolado."
+  },
+  {
+    "slug": "oficina-bosque",
+    "path": "assets/portfolio/oficina-bosque.webp",
+    "alt": "Oficina con mesas de trabajo, vegetación y sala de reuniones acristalada."
+  },
+  {
+    "slug": "casa-alero",
+    "path": "assets/portfolio/casa-alero.webp",
+    "alt": "Vivienda tropical compacta con alero profundo y espacios abiertos a la ventilación."
+  },
+  {
+    "slug": "torre-laguna",
+    "path": "assets/portfolio/torre-laguna.webp",
+    "alt": "Apartamento en altura con carpintería integrada y vista sobre San Salvador."
+  },
+  {
+    "slug": "casa-patio",
+    "path": "assets/portfolio/casa-patio.webp",
+    "alt": "Patio central arbolado rodeado por espacios de convivencia y circulación."
+  },
+  {
+    "slug": "estudio-creativo",
+    "path": "assets/portfolio/estudio-creativo.webp",
+    "alt": "Taller creativo con mesas móviles, muestras y espacio de exhibición."
+  }
+]

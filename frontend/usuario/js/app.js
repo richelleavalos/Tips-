@@ -35,25 +35,27 @@
    * Si el catálogo cambia, el producto conserva automáticamente el placeholder
    * generado por CSS, de modo que la UI nunca depende de una imagen obligatoria.
    */
-  const productImage = (product) => {
-    const name = String(product?.name || "").toLowerCase();
-    const rules = [
-      [/lámpara|lampara/, "/assets/images/editorial-products/lamp.jpg"],
-      [/mochila|bolso/, "/assets/images/editorial-products/backpack.jpg"],
-      [/botella|térmica|termica/, "/assets/images/editorial-products/bottle.jpg"],
-      [/vela/, "/assets/images/editorial-products/candle.jpg"],
-      [/zapatilla|running/, "/assets/images/editorial-products/shoes.jpg"],
-    ];
-    return rules.find(([pattern]) => pattern.test(name))?.[1] || "";
-  };
+  const productImage = product => product?.primary_image
+    ? "/" + String(product.primary_image).replace(/^\/+/, "") : "";
 
-  /** Construye atributos seguros para la superficie visual de un producto. */
-  const productVisualAttrs = (product) => {
-    const image = productImage(product);
-    return image
-      ? `class="product-placeholder editorial-product-image" data-tone="${productTone(product.id)}" style="background-image:url(${image})"`
-      : `class="product-placeholder" data-tone="${productTone(product.id)}"`;
-  };
+  const productVisualAttrs = product => product?.primary_image
+    ? 'class="product-placeholder has-real-image"'
+    : 'class="product-placeholder"';
+
+  function projectPhotoPath(value) {
+    const url = new URL("/" + String(value || "").replace(/^\/+/, ""), location.origin);
+    return url.origin === location.origin && url.pathname.startsWith("/assets/") ? url.pathname : "";
+  }
+
+  function projectCover(project) {
+    const src = projectPhotoPath(project.cover_path);
+    return src
+      ? `<img src="${escapeHtml(src)}" alt="${escapeHtml(project.cover_alt || project.title)}" loading="lazy" decoding="async">`
+      : '<span class="project-no-photo">Imagen no disponible</span>';
+  }
+
+  const productPhoto=(product,lazy=true)=>product?.primary_image
+    ? `<img class="product-real-image" src="${escapeHtml(productImage(product))}" alt="${escapeHtml(product.primary_image_alt||product.name)}" ${lazy?'loading="lazy"':''} decoding="async">` : "";
 
   class ApiClient {
     /** Cliente HTTP mínimo con sesión de navegador y protección CSRF. */
@@ -93,6 +95,7 @@
         error.status = response.status;
         throw error;
       }
+      if (data.csrf_token) this.csrfToken = data.csrf_token;
       return data;
     }
   }
@@ -106,6 +109,8 @@
       this.activeProduct = null;
       this.cart = { items: [], subtotal_cents: 0 };
       this.cartDrawer = $("[data-cart-drawer]");
+      this.cartLoaded = false;
+      this.cartOpening = false;
     }
 
     /** Activa comportamientos globales y luego inicializa la vista actual. */
@@ -116,7 +121,7 @@
       this.bindQuoteForm();
       this.bindCheckoutForm();
 
-      await this.loadCart();
+      const cartReady=this.loadCart();
 
       const page = document.body.dataset.page;
       if (page === "home") await this.loadHome();
@@ -124,6 +129,7 @@
       if (page === "architecture") await this.loadArchitecture();
       if (page === "project") await this.loadProject();
       if (page === "account") await this.loadAccount();
+      await cartReady;
     }
 
     // ---------------------------------------------------------------------
@@ -158,6 +164,7 @@
           subtotal_cents: Number(response.subtotal_cents) || 0,
           currency: response.currency || "USD",
         };
+        this.cartLoaded = true;
         this.renderCart();
       } catch (error) {
         console.error(error);
@@ -180,13 +187,13 @@
         container.innerHTML = this.cart.items.length
           ? this.cart.items.map((item) => `
               <article class="cart-item">
-                <div class="cart-item-thumb"></div>
+                <div class="cart-item-thumb">${productImage(item)?`<img src="${escapeHtml(productImage(item))}" alt="${escapeHtml(item.primary_image_alt||item.name)}" width="64" height="72">`:""}</div>
                 <div>
                   <h3>${escapeHtml(item.name)}</h3>
                   <small>${escapeHtml(item.option_summary || "Estándar")} · Cant. ${item.quantity}</small>
                   <div>
-                    <button data-dec="${item.id}">−</button>
-                    <button data-inc="${item.id}">+</button>
+                    <button aria-label="Reducir cantidad de ${escapeHtml(item.name)}" data-dec="${item.id}">−</button>
+                    <button aria-label="Aumentar cantidad de ${escapeHtml(item.name)}" data-inc="${item.id}">+</button>
                     <button data-remove="${item.id}">Eliminar</button>
                   </div>
                 </div>
@@ -220,20 +227,39 @@
       }
     }
 
-    /** Abre y cierra el panel lateral del carrito desde cualquier página pública. */
+    /** Abre la bolsa de forma estable, visible de inmediato y luego refresca datos. */
+    async openCartDrawer() {
+      if (!this.cartDrawer) return;
+      this.cartDrawer.classList.add("is-open");
+      this.cartDrawer.setAttribute("aria-hidden", "false");
+      $$('[data-cart-open]').forEach((button) => button.setAttribute("aria-expanded", "true"));
+      document.body.classList.add("no-scroll");
+      if (this.cartOpening) return;
+      this.cartOpening = true;
+      this.cartDrawer.classList.add("is-loading");
+      const container = $("[data-cart-items]", this.cartDrawer);
+      if (!this.cartLoaded && container) {
+        container.innerHTML = '<div class="cart-loading" aria-label="Cargando bolsa"><span></span><span></span><span></span></div>';
+      }
+      try {
+        await this.loadCart();
+      } finally {
+        this.cartOpening = false;
+        this.cartDrawer.classList.remove("is-loading");
+        $("[data-cart-close]", this.cartDrawer)?.focus();
+      }
+    }
+
+    /** Abre y cierra el panel lateral de la bolsa desde cualquier página pública. */
     bindCartDrawer() {
       $$('[data-cart-open]').forEach((button) => {
-        button.onclick = async () => {
-          if (!this.cartDrawer) return;
-          this.cartDrawer.classList.add("is-open");
-          this.cartDrawer.setAttribute("aria-hidden", "false");
-          document.body.classList.add("no-scroll");
-          // Refresca al abrir: el drawer nunca depende de un estado antiguo.
-          await this.loadCart();
-          $("[data-cart-close]", this.cartDrawer)?.focus();
-        };
+        button.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          void this.openCartDrawer();
+        });
       });
-      $("[data-cart-close]")?.addEventListener("click", () => this.closeCartDrawer());
+      $("[data-cart-close]", this.cartDrawer || document)?.addEventListener("click", () => this.closeCartDrawer());
       this.cartDrawer?.addEventListener("click", (event) => {
         if (event.target === this.cartDrawer) this.closeCartDrawer();
       });
@@ -246,8 +272,9 @@
 
     /** Cierra el panel del carrito y devuelve el scroll a la página. */
     closeCartDrawer() {
-      this.cartDrawer?.classList.remove("is-open");
+      this.cartDrawer?.classList.remove("is-open", "is-loading");
       this.cartDrawer?.setAttribute("aria-hidden", "true");
+      $$('[data-cart-open]').forEach((button) => button.setAttribute("aria-expanded", "false"));
       if (!$("[data-product-modal].is-open") && !$("[data-order-success].is-open")) {
         document.body.classList.remove("no-scroll");
       }
@@ -268,7 +295,7 @@
         if (projectContainer) {
           projectContainer.innerHTML = projects.items.slice(0, 4).map((project) => `
             <a class="project-card" href="proyecto.html?id=${project.id}">
-              <div class="project-art"></div>
+              <div class="project-art">${projectCover(project)}</div>
               <div class="project-card-content">
                 <small>${escapeHtml(project.category)}</small>
                 <h3>${escapeHtml(project.title)}</h3>
@@ -279,7 +306,7 @@
         if (productContainer) {
           productContainer.innerHTML = products.items.slice(0, 5).map((product) => `
             <a class="mini-product" href="tienda.html">
-              <div ${productVisualAttrs(product)}></div>
+              <div ${productVisualAttrs(product)}>${productPhoto(product)}</div>
               <h3>${escapeHtml(product.name)}</h3>
               <p>${formatUsd(product.base_price_cents)}</p>
             </a>`).join("");
@@ -358,11 +385,11 @@
         <article class="shop-card">
           <span class="stock-chip">${Number(product.stock_quantity) > 0 ? "Disponible" : "Bajo pedido"}</span>
           <button class="product-open" data-product="${product.id}">
-            <div ${productVisualAttrs(product)}></div>
+            <div ${productVisualAttrs(product)}>${productPhoto(product)}</div>
             <div class="shop-info">
               <small>${escapeHtml(product.category_name)}</small>
               <h3>${escapeHtml(product.name)}</h3>
-              <strong>Desde ${formatUsd(product.base_price_cents)}</strong>
+              <strong>Desde ${formatUsd(product.base_price_cents)}</strong><span class="client-card-hint">Ver detalles</span>
             </div>
           </button>
         </article>`).join("");
@@ -376,23 +403,34 @@
     // ---------------------------------------------------------------------
 
     /** Muestra el producto seleccionado en el modal de compra rápida. */
-    openProductModal(productId) {
+    async openProductModal(productId) {
       this.activeProduct = this.products.find((product) => Number(product.id) === productId);
       if (!this.activeProduct) return;
       $("[data-modal-title]").textContent = this.activeProduct.name;
       $("[data-modal-description]").textContent = this.activeProduct.description;
       $("[data-modal-price]").textContent = `Desde ${formatUsd(this.activeProduct.base_price_cents)}`;
       const modalVisual = $("[data-modal-visual]");
+      modalVisual.innerHTML=productPhoto(this.activeProduct,false);
+      modalVisual.classList.toggle("has-real-image",Boolean(this.activeProduct.primary_image));
       modalVisual.dataset.tone = productTone(productId);
-      const image = productImage(this.activeProduct);
-      modalVisual.style.backgroundImage = image ? `url(${image})` : "";
       $("[data-modal-qty]").value = 1;
       $("[data-modal-message]").textContent = "";
       const layer = $("[data-product-modal]");
+      layer.dataset.productId=String(productId);
       layer.classList.add("is-open");
       layer.setAttribute("aria-hidden", "false");
       document.body.classList.add("no-scroll");
       $("[data-modal-close]", layer)?.focus();
+      const add=$("[data-modal-add]");add.disabled=true;
+      let options=$("[data-modal-options]");
+      if(!options){options=document.createElement("div");options.dataset.modalOptions="";add.before(options);}
+      options.textContent="Cargando opciones…";
+      try {
+        const detail=await this.api.request('/api/products/'+productId);
+        if(Number(this.activeProduct.id)!==productId)return;
+        options.innerHTML=`<label>Variante<select data-modal-variant>${detail.variants.map(v=>`<option value="${v.id}" data-price="${v.price_cents??detail.base_price_cents}">${escapeHtml(v.option_summary||v.sku)} · ${v.stock_quantity===null?'Por encargo':v.stock_quantity+' disponibles'}</option>`).join('')}</select></label>${detail.customizations.map(c=>`<label>${escapeHtml(c.name)}${c.is_required?' *':''}<select data-customization data-required="${c.is_required}"><option value="">Seleccionar</option>${c.values.map(v=>`<option value="${v.id}" data-price="${v.price_delta_cents}">${escapeHtml(v.label)} (${formatUsd(v.price_delta_cents)})</option>`).join('')}</select></label>`).join('')}`;
+        const price=()=>{const v=$('[data-modal-variant] option:checked');const extras=$$('[data-customization] option:checked').reduce((sum,o)=>sum+Number(o.dataset.price||0),0);$('[data-modal-price]').textContent=formatUsd(Number(v?.dataset.price||0)+extras);};options.addEventListener('change',price);price();add.disabled=!detail.variants.length;
+      }catch(e){options.textContent=e.message;}
     }
 
     /** Cierra el modal de producto y restaura el scroll de la página. */
@@ -424,28 +462,28 @@
       });
       $("[data-modal-add]")?.addEventListener("click", async () => {
         const message = $("[data-modal-message]");
+        const button=$("[data-modal-add]");
+        if(button.disabled)return;
+        if($$('[data-customization]').some(select=>select.dataset.required==='1'&&!select.value)){message.textContent='Completa las personalizaciones obligatorias.';return;}
+        button.disabled=true;
         try {
           this.cart = await this.api.request("/api/cart/items", {
             method: "POST",
             body: JSON.stringify({
-              variant_id: Number(this.activeProduct.first_variant_id),
+              variant_id: Number($("[data-modal-variant]").value),
               quantity: Math.max(1, Math.min(25, Number($("[data-modal-qty]").value))),
-              customization_value_ids: [],
+              customization_value_ids: $$('[data-customization]').map(s=>Number(s.value)).filter(Boolean),
             }),
           });
           this.renderCart();
           message.textContent = "Agregado al carrito.";
-          setTimeout(async () => {
+          setTimeout(() => {
             this.closeProductModal();
-            if (!this.cartDrawer) return;
-            this.cartDrawer.classList.add("is-open");
-            this.cartDrawer.setAttribute("aria-hidden", "false");
-            document.body.classList.add("no-scroll");
-            await this.loadCart();
+            void this.openCartDrawer();
           }, 180);
         } catch (error) {
           message.textContent = error.message;
-        }
+        } finally { button.disabled=false; }
       });
     }
 
@@ -459,11 +497,11 @@
         this.portfolio = (await this.api.request("/api/portfolio")).items;
         this.renderPortfolio();
         $$("[data-project-filter]").forEach((button) => {
-          button.onclick = () => {
+          button.onclick = () => (window.TipsMotion?.change || (fn=>fn()))(() => {
             $$("[data-project-filter]").forEach((item) => item.classList.remove("active"));
             button.classList.add("active");
             this.renderPortfolio(button.dataset.projectFilter);
-          };
+          });
         });
       } catch (error) {
         console.error(error);
@@ -478,7 +516,7 @@
         .filter((project) => !filter || project.category.toLowerCase() === filter.toLowerCase())
         .map((project) => `
           <a class="portfolio-card" href="proyecto.html?id=${project.id}">
-            <div class="portfolio-art"></div>
+            <div class="portfolio-art">${projectCover(project)}</div>
             <div class="portfolio-card-content">
               <small>${escapeHtml(project.category)} · ${escapeHtml(project.completed_year)}</small>
               <h3>${escapeHtml(project.title)}</h3>
@@ -502,6 +540,25 @@
         $("[data-fact-year]").textContent = project.completed_year || "—";
         $("[data-fact-category]").textContent = project.category || "—";
         $("[data-project-quote]").href = `contacto.html?project=${encodeURIComponent(project.title)}`;
+        for(const [selector,id] of [["[data-project-prev]",project.previous_id],["[data-project-next]",project.next_id]]){
+          const link=$(selector);if(id){link.href=`/proyecto.html?id=${Number(id)}`;link.hidden=false;}
+        }
+        const visual=$("[data-project-visual]"),thumbs=$("[data-project-thumbs]");
+        const images = Array.isArray(project.images) ? project.images.filter(image => projectPhotoPath(image.path)) : [];
+        const show=index=>{
+          const picture=images[index];const image=document.createElement("img");image.src=projectPhotoPath(picture.path);image.alt=picture.alt_text||project.title;visual.replaceChildren(image);
+          const caption = $("[data-project-image-caption]");
+          caption.hidden = !image.src.includes("/assets/portfolio/");
+          [...thumbs.children].forEach((button,i)=>{button.classList.toggle("active",i===index);button.setAttribute("aria-pressed",String(i===index));});
+        };
+        if(images.length){
+          for(const [index,picture] of images.entries()){
+            const button=document.createElement("button");button.type="button";button.setAttribute("aria-label",`Ver foto ${index+1}: ${picture.alt_text||project.title}`);
+            const image=document.createElement("img");image.src=projectPhotoPath(picture.path);image.alt="";button.append(image);
+            button.onclick=()=>(window.TipsMotion?.change||(fn=>fn()))(()=>show(index));thumbs.append(button);
+          }
+          thumbs.hidden=images.length<2;show(0);
+        }
       } catch (error) {
         root.innerHTML = `<div class="empty-state"><strong>Proyecto no encontrado.</strong><p>${escapeHtml(error.message)}</p></div>`;
       }
@@ -509,35 +566,7 @@
 
     /** Envía el formulario de cotización y abre su confirmación visual. */
     bindQuoteForm() {
-      $("[data-quote-form]")?.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const form = event.currentTarget;
-        const data = new FormData(form);
-        const message = $("[data-quote-message]");
-        const projectReference = new URLSearchParams(location.search).get("project");
-        let bodyMessage = String(data.get("message"));
-        if (projectReference) bodyMessage = `Referencia: ${projectReference}\n\n${bodyMessage}`;
-        message.textContent = "Enviando…";
-        try {
-          await this.api.request("/api/quotes", {
-            method: "POST",
-            body: JSON.stringify({
-              name: data.get("name"),
-              contact: data.get("contact"),
-              project_type: data.get("project_type"),
-              message: bodyMessage,
-            }),
-          });
-          message.textContent = "";
-          $("[data-quote-success]").classList.add("is-open");
-          form.reset();
-        } catch (error) {
-          message.textContent = error.message;
-        }
-      });
-      $("[data-success-close]")?.addEventListener("click", () => {
-        $("[data-quote-success]").classList.remove("is-open");
-      });
+      // Formulario de diseño gestionado por design-form.js (borradores y cargas reanudables).
     }
 
     // ---------------------------------------------------------------------
@@ -553,15 +582,40 @@
         // La pantalla de login continúa disponible aunque falle la consulta inicial.
       }
 
-      $$("[data-auth-tab]").forEach((button) => {
-        button.onclick = () => {
-          $$("[data-auth-tab]").forEach((item) => item.classList.toggle("active", item === button));
-          $$("[data-auth-form]").forEach((form) => {
-            form.classList.toggle("hidden", form.dataset.authForm !== button.dataset.authTab);
-          });
-          $("[data-account-state]").classList.add("hidden");
-        };
+      const query = new URLSearchParams(location.search);
+      const resumeCheckout = query.get("next") === "/checkout.html";
+      const showMode = mode => {
+        const registering = mode === "register";
+        document.body.dataset.authMode = mode;
+        $("[data-auth-eyebrow]").textContent = registering ? "Tu cuenta TIPS" : "Bienvenido de nuevo";
+        $("[data-auth-heading]").textContent = registering ? "Crea tu cuenta" : "Inicia sesión";
+        $("[data-auth-lead]").textContent = resumeCheckout
+          ? "Tu borrador está guardado. Después podrás revisarlo y confirmar el pedido."
+          : registering ? "Guarda y consulta tus pedidos desde tu cuenta." : "Accede a tus pedidos y solicitudes de diseño.";
+        $$("[data-auth-tab]").forEach(button => {
+          const selected = button.dataset.authTab === mode;
+          button.classList.toggle("active", selected);
+          button.setAttribute("aria-pressed", String(selected));
+        });
+        $$("[data-auth-form]").forEach(form => form.classList.toggle("hidden", form.dataset.authForm !== mode));
+      };
+      showMode("login");
+      $$("[data-auth-tab]").forEach(button => {
+        button.onclick = () => (window.TipsMotion?.change || (update => update()))(() => showMode(button.dataset.authTab));
       });
+      if (resumeCheckout) {
+        this.api.request("/api/checkout/draft").then(({draft}) => {
+          const login = $('[data-auth-form="login"]');
+          const register = $('[data-auth-form="register"]');
+          for (const [field, value] of Object.entries({
+            display_name: draft.customer_name, email: draft.email, phone: draft.phone, country_code: draft.country_code
+          })) {
+            if (value && (field === "country_code" || !register.elements[field].value)) register.elements[field].value = value;
+          }
+          if (draft.email && !login.elements.email.value) login.elements.email.value = draft.email;
+          if (draft.phone) register.elements.phone.dispatchEvent(new Event("input"));
+        }).catch(() => {});
+      }
 
       $$("[data-auth-form]").forEach((form) => {
         form.onsubmit = async (event) => {
@@ -570,18 +624,45 @@
           const data = new FormData(form);
           const message = $(`[data-${type}-message]`);
           const payload = type === "register"
-            ? { display_name: data.get("display_name"), email: data.get("email"), password: data.get("password") }
+            ? { display_name: data.get("display_name"), email: data.get("email"), password: data.get("password"), phone: data.get("phone"), country_code: data.get("country_code") }
             : { email: data.get("email"), password: data.get("password") };
           try {
             const response = await this.api.request(`/api/auth/${type}`, {
               method: "POST",
               body: JSON.stringify(payload),
             });
+            if (response.two_factor_required) {
+              form.classList.add("hidden");
+              $(".auth-tabs")?.classList.add("hidden");
+              const twoFactorForm = $("[data-auth-2fa]");
+              twoFactorForm.classList.remove("hidden");
+              twoFactorForm.dataset.challengeToken = response.challenge_token;
+              $("[name=code]", twoFactorForm)?.focus();
+              return;
+            }
             this.showAuthenticatedUser(response.user);
           } catch (error) {
             message.textContent = error.message;
           }
         };
+      });
+
+      $("[data-auth-2fa]")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const message = $("[data-2fa-login-message]");
+        try {
+          const response = await this.api.request("/api/auth/2fa/verify-login", {
+            method: "POST",
+            body: JSON.stringify({
+              challenge_token: form.dataset.challengeToken || "",
+              code: String(new FormData(form).get("code") || "").replace(/\s/g, ""),
+            }),
+          });
+          this.showAuthenticatedUser(response.user);
+        } catch (error) {
+          message.textContent = error.message;
+        }
       });
 
       $("[data-logout]")?.addEventListener("click", async () => {
@@ -593,7 +674,12 @@
     /** Redirige por rol o muestra el resumen de una sesión autenticada. */
     showAuthenticatedUser(user) {
       if (user?.role) {
-        location.replace(user.role === "admin" ? "/admin/" : "/user/");
+        const resume = user.role === "user" && new URLSearchParams(location.search).get("next") === "/checkout.html";
+        if (user.must_change_password) {
+          location.replace(resume ? "/change-password.html?next=%2Fcheckout.html" : "/change-password.html");
+          return;
+        }
+        location.replace(resume ? "/checkout.html" : ["admin", "superadmin"].includes(user.role) ? "/admin/" : "/user/");
         return;
       }
       $$("[data-auth-form]").forEach((form) => form.classList.add("hidden"));
@@ -614,11 +700,13 @@
       container.innerHTML = this.cart.items.length
         ? this.cart.items.map((item) => `
             <div class="summary-item">
-              <div class="summary-thumb"></div>
+              <div class="summary-thumb">${productImage(item)?`<img src="${escapeHtml(productImage(item))}" alt="${escapeHtml(item.primary_image_alt||item.name)}" width="60" height="60">`:""}</div>
               <div><strong>${escapeHtml(item.name)}</strong><div>Cant. ${item.quantity}</div></div>
               <strong>${formatUsd(item.line_total_cents)}</strong>
             </div>`).join("")
-        : '<p class="cart-empty">No hay productos en el carrito.</p>';
+        : '<div class="cart-empty"><p>No hay productos en el carrito.</p><a class="btn ghost" href="/tienda.html">Explorar productos →</a></div>';
+      const submit=$("[data-checkout-form] [type=submit]");
+      if(submit) submit.disabled = !this.cart.items.length || submit.form.dataset.ready !== "true";
       $$("[data-summary-subtotal],[data-summary-total]").forEach((node) => {
         node.textContent = formatUsd(this.cart.subtotal_cents);
       });
@@ -626,43 +714,63 @@
 
     /** Envía el checkout de demostración y muestra el pedido confirmado. */
     bindCheckoutForm() {
-      $("[data-checkout-form]")?.addEventListener("submit", async (event) => {
+      const form = $("[data-checkout-form]");
+      if (!form) return;
+      let key = sessionStorage.getItem("tips-order-key") || crypto.randomUUID();
+      sessionStorage.setItem("tips-order-key", key);
+      const button = form.querySelector('[type="submit"]');
+      const message = $("[data-checkout-message]");
+      let customer = false;
+      let ready = false;
+      Promise.all([
+        this.api.request("/api/auth/me"),
+        this.api.request("/api/checkout/draft"),
+      ]).then(async ([auth, {draft}]) => {
+        customer = auth.user?.role === "user";
+        let fields = draft;
+        if (draft.idempotency_key) {
+          key = draft.idempotency_key;
+          sessionStorage.setItem("tips-order-key", key);
+          message.textContent = "Borrador recuperado. Revisa los datos antes de confirmar.";
+        } else if (customer) {
+          const {user} = await this.api.request("/api/account");
+          fields = {customer_name: user.display_name, email: user.email, country_code: user.country_code, phone: user.phone};
+        }
+        for (const [name, value] of Object.entries(fields)) {
+          if (form.elements[name] && value) form.elements[name].value = value;
+        }
+        form.elements.phone.dispatchEvent(new Event("input"));
+        button.textContent = customer ? "Confirmar solicitud →" : "Guardar y continuar →";
+        ready = true;
+        form.dataset.ready = "true";
+        this.renderCheckout();
+      }).catch(() => { message.textContent = "No pudimos cargar el pedido. Recarga la página para continuar."; });
+      form.addEventListener("submit", async event => {
         event.preventDefault();
-        const data = new FormData(event.currentTarget);
-        const message = $("[data-checkout-message]");
-        if (!this.cart.items.length) {
-          message.textContent = "Agrega al menos un producto.";
-          return;
-        }
-        const payload = {
-          customer_name: data.get("customer_name"),
-          email: data.get("email"),
-          phone: data.get("phone"),
-          shipping_address: {
-            address: data.get("address"),
-            city: data.get("city"),
-            region: data.get("region"),
-            postal_code: data.get("postal_code"),
-            country: data.get("country"),
-            notes: data.get("notes"),
-          },
-        };
+        if (!ready || button.disabled) return;
+        const data = new FormData(form);
+        const payload = Object.fromEntries(data);
+        payload.idempotency_key = key;
+        button.disabled = true;
+        message.textContent = "Guardando tu solicitud…";
         try {
-          const order = await this.api.request("/api/checkout/mock", {
-            method: "POST",
-            body: JSON.stringify(payload),
-          });
-          $("[data-order-id]").textContent = `#${order.public_id}`;
+          if (!customer) {
+            await this.api.request("/api/checkout/draft", {method:"POST",body:JSON.stringify(payload)});
+            location.assign("/cuenta.html?next=%2Fcheckout.html");
+            return;
+          }
+          const order = await this.api.request("/api/checkout/create", {method:"POST",body:JSON.stringify(payload)});
+          $("[data-order-id]").textContent = order.public_id;
           $("[data-order-total]").textContent = formatUsd(order.total_cents);
+          const link = $("[data-tracking-link]");
+          link.href = order.tracking_url;
           $("[data-order-success]").classList.add("is-open");
-          this.cart = { items: [], subtotal_cents: 0 };
-          this.renderCart();
-        } catch (error) {
-          message.textContent = error.status === 401
-            ? "Inicia sesión antes de completar la compra."
-            : error.message;
-          if (error.status === 401) setTimeout(() => { location.href = "cuenta.html"; }, 900);
-        }
+          $("[data-order-success]").setAttribute("aria-hidden","false");
+          this.cart = {items:[],subtotal_cents:0}; this.renderCart();
+          sessionStorage.removeItem("tips-order-key");
+          message.textContent = "Pedido guardado correctamente.";
+          form.reset();
+        } catch (error) { message.textContent = error.message; button.disabled=false; }
       });
     }
   }

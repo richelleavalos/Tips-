@@ -85,7 +85,7 @@ body.user-area :focus-visible { outline: 2px solid var(--u-orange); outline-offs
   width: 70px;
   height: 56px;
   object-fit: contain;
-  filter: brightness(0) invert(1);
+  filter: none;
 }
 .user-brand strong {
   display: block;
@@ -458,4 +458,16 @@ body[data-user-page="resumen"] [data-user-content] { display: block; }
 
 @media (prefers-reduced-motion: reduce) {
   .user-side { transition: none; }
+}
+
+/* TIPS v6.2 — el logo de cuenta usa la misma caja y proporción oficial. */
+.user-brand { grid-template-columns: 76px minmax(0,1fr); }
+.user-brand img {
+  width: 76px;
+  height: 58px;
+  max-width: 76px;
+  max-height: 58px;
+  object-fit: contain;
+  object-position: left center;
+  background: transparent;
 }

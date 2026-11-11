@@ -1,0 +1,42 @@
+[
+  {
+    "slug": "auriculares-premium",
+    "path": "assets/catalog/auriculares-premium.webp",
+    "alt": "Auriculares negros con estuche de carga abierto"
+  },
+  {
+    "slug": "mochila-urbana",
+    "path": "assets/catalog/mochila-urbana.webp",
+    "alt": "Mochila urbana verde oliva con bolsillo frontal"
+  },
+  {
+    "slug": "botella-termica",
+    "path": "assets/catalog/botella-termica.webp",
+    "alt": "Botella térmica verde mate de acero inoxidable"
+  },
+  {
+    "slug": "zapatillas-running",
+    "path": "assets/catalog/zapatillas-running.webp",
+    "alt": "Zapatillas de running crema y verde oliva"
+  },
+  {
+    "slug": "lampara-escritorio",
+    "path": "assets/catalog/lampara-escritorio.webp",
+    "alt": "Lámpara compacta de escritorio con luz cálida"
+  },
+  {
+    "slug": "vela-terracota",
+    "path": "assets/catalog/vela-terracota.webp",
+    "alt": "Vela artesanal en recipiente de terracota"
+  },
+  {
+    "slug": "bolso-yute-tips",
+    "path": "assets/catalog/bolso-yute-tips.webp",
+    "alt": "Bolso tejido de yute natural con asas cortas"
+  },
+  {
+    "slug": "libreta-boceto",
+    "path": "assets/catalog/libreta-boceto.webp",
+    "alt": "Libreta de papel reciclado con cubierta kraft"
+  }
+]

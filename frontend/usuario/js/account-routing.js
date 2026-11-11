@@ -13,7 +13,10 @@
       const data = await response.json();
       if (!data.authenticated || !data.user) return;
       routing = true;
-      location.href = data.user.role === "admin" ? "/admin/" : "/user/";
+      const user = data.user;
+      const isAdmin = ["admin", "superadmin"].includes(user.role);
+      if (user.must_change_password) { location.href = "/change-password.html"; return; }
+      location.href = isAdmin ? "/admin/" : "/user/";
     } catch {}
   }
   routeAuthenticatedUser();

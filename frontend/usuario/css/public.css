@@ -184,8 +184,8 @@ h1{line-height:.96}.eyebrow{color:var(--tips-terracotta);font-weight:600;letter-
 .product-placeholder.editorial-product-image::before,.product-placeholder.editorial-product-image::after{display:none!important}
 
 .project-strip{grid-template-columns:repeat(4,1fr);gap:18px}.project-card,.portfolio-card{border:0;background:transparent}.project-card:hover,.portfolio-card:hover{box-shadow:none;transform:translateY(-2px)}
-.project-art,.portfolio-art{background-image:url('/assets/images/editorial-detail.jpg');background-size:cover;background-position:center;border:0}.project-art::before,.portfolio-art::before{display:none}
-.project-card:nth-child(even) .project-art,.portfolio-card:nth-child(even) .portfolio-art{background-image:url('/assets/images/editorial-hero.jpg')}
+.project-art,.portfolio-art{background-size:cover;background-position:center;border:0}.project-art::before,.portfolio-art::before{display:none}
+
 .project-card-content,.portfolio-card-content{padding:14px 2px}.project-card-content h3,.portfolio-card-content h3{font-family:var(--tips-display);font-size:1.3rem;font-weight:400}
 .dual-feature{border-color:rgba(17,27,22,.12)}.feature-card{padding:38px;min-height:250px}.feature-card:hover{background:rgba(255,255,255,.28)}
 .feature-visual{background-size:cover;background-position:center}.feature-card.architecture .feature-visual{background-image:url('/assets/images/editorial-hero.jpg')}.feature-card.products .feature-visual{background-image:url('/assets/images/editorial-detail.jpg')}.line-building,.object-composition{display:none}
@@ -220,10 +220,10 @@ h1{line-height:.96}.eyebrow{color:var(--tips-terracotta);font-weight:600;letter-
 .checkout-steps{gap:18px}.checkout-steps i{width:80px;border-color:#aaa49a}.checkout-layout{grid-template-columns:minmax(0,1.35fr) minmax(330px,.65fr);gap:34px}.checkout-form{padding:10px 0 0}.checkout-form section+section{border-color:var(--tips-line)}.form-section-title>span{background:transparent;color:var(--tips-green);border:1px solid var(--tips-green);font-family:var(--tips-display);font-weight:400}.form-section-title h2{font-family:var(--tips-display);font-size:2rem;font-weight:400}.form-section-title p{font-size:.74rem}.form-grid{gap:18px 20px}.fake-card{background:transparent;border:1px solid var(--tips-line);padding:18px}.order-summary{background:#eee9df;border:0;padding:30px;position:sticky;top:112px}.order-summary h2{font-family:var(--tips-display);font-size:2rem;font-weight:400}.summary-thumb{background-image:url('/assets/images/editorial-detail.jpg');background-size:cover}.summary-help{border-top:1px solid var(--tips-line);padding-top:20px;line-height:1.6}.success-modal{border-radius:0;background:var(--tips-paper);box-shadow:var(--tips-shadow)}
 
 /* Cart */
-.cart-drawer{background:rgba(15,22,17,.38)}.cart-panel{background:var(--tips-paper);width:min(480px,100%)}.drawer-head,.cart-footer{border-color:var(--tips-line)}.drawer-head h2{font-family:var(--tips-display);font-weight:400;font-size:2.7rem}.cart-item{border-color:var(--tips-line)}.cart-item-thumb{background-image:url('/assets/images/editorial-detail.jpg');background-size:cover}.cart-footer .btn{margin-top:4px}
+.cart-drawer{background:rgba(15,22,17,.38)}.cart-panel{background:var(--tips-paper);width:min(480px,100%)}.drawer-head,.cart-footer{border-color:var(--tips-line)}.drawer-head h2{font-family:var(--tips-display);font-weight:400;font-size:2.7rem}.cart-item{border-color:var(--tips-line)}.cart-item-thumb{background:#e9e6dc}.cart-footer .btn{margin-top:4px}
 
 /* Architecture / portfolio / project */
-.architecture-hero{padding:70px 0 80px;gap:50px}.architecture-hero h1{font-size:clamp(3.4rem,5.6vw,6.1rem)}.architecture-board{background-image:url('/assets/images/editorial-hero.jpg')!important;background-size:cover!important;background-position:center!important}.architecture-board .plan-line,.architecture-board .board-tag{display:none!important}.project-main-visual{background-image:url('/assets/images/editorial-hero.jpg')!important;background-size:cover!important;background-position:center!important}.project-main-visual span{display:none}.project-facts{background:var(--tips-paper-2)!important;border:0!important}.project-description h2{font-size:2.4rem}
+.architecture-hero{padding:70px 0 80px;gap:50px}.architecture-hero h1{font-size:clamp(3.4rem,5.6vw,6.1rem)}.architecture-board{background-size:cover!important;background-position:center!important}.architecture-board .plan-line,.architecture-board .board-tag{display:none!important}.project-main-visual{background-size:cover!important;background-position:center!important}.project-main-visual span{display:none}.project-facts{background:var(--tips-paper-2)!important;border:0!important}.project-description h2{font-size:2.4rem}
 
 /* Footer */
 .footer{background:#efeae0;padding-top:64px}.footer-brand-logo{background:transparent!important;border-radius:0!important;width:118px!important;height:auto!important}.footer-grid{gap:60px}.footer-grid strong{font-weight:600}.footer-grid a,.footer-grid span,.footer-grid p{color:#5f615d}.footer-bottom{border-color:#d5cec3}
@@ -380,3 +380,94 @@ h1{line-height:.96}.eyebrow{color:var(--tips-terracotta);font-weight:600;letter-
   .quick-copy { padding: 28px 22px 32px; }
   .cart-panel { flex-basis: 100vw; }
 }
+
+/* TIPS v6.2 — logotipo con proporción estable en todas las vistas públicas. */
+.brand-lockup .brand-logo,
+.footer .footer-brand-logo.brand-logo {
+  display: block !important;
+  width: 118px !important;
+  height: 64px !important;
+  max-width: 118px !important;
+  max-height: 64px !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  flex: 0 0 118px !important;
+}
+@media (max-width:760px) {
+  .brand-lockup .brand-logo,
+  .footer .footer-brand-logo.brand-logo {
+    width: 92px !important;
+    height: 52px !important;
+    max-width: 92px !important;
+    max-height: 52px !important;
+    flex-basis: 92px !important;
+  }
+}
+
+
+/* TIPS v6.3 — bolsa estable, accesible y con estado de carga. */
+.cart-drawer {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .22s ease, visibility 0s linear .22s;
+}
+.cart-drawer .cart-panel {
+  transform: translate3d(100%,0,0);
+  transition: transform .28s cubic-bezier(.2,.75,.25,1);
+  will-change: transform;
+}
+.cart-drawer.is-open {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+.cart-drawer.is-open .cart-panel { transform: translate3d(0,0,0); }
+.cart-trigger[aria-expanded="true"] { color: var(--tips-green, #173d2b); }
+.cart-loading { display:grid; gap:14px; padding:22px 0; }
+.cart-loading span {
+  display:block; height:86px; border-radius:14px;
+  background:linear-gradient(90deg,#ece7de 20%,#f7f3eb 38%,#ece7de 58%);
+  background-size:220% 100%; animation:tips-cart-skeleton 1.2s linear infinite;
+}
+@keyframes tips-cart-skeleton { to { background-position:-220% 0; } }
+@media (prefers-reduced-motion: reduce) { .cart-drawer,.cart-drawer .cart-panel{transition:none}.cart-loading span{animation:none} }
+/* v6.5: el menú cerrado ya no genera una segunda pantalla horizontal. */
+@media(max-width:980px){.main-nav:not(.is-open){visibility:hidden;transform:none!important;pointer-events:none}.main-nav.is-open{visibility:visible;pointer-events:auto}.filters:not(.is-open){visibility:hidden}}
+[data-modal-options]{display:grid;gap:10px;margin:16px 0}[data-modal-options] label{display:grid;gap:5px;font-size:.8rem}[data-modal-options] select{width:100%;min-width:0;padding:10px;border:1px solid var(--line);background:#fff;font:inherit}
+@media(max-width:640px){.cart-trigger:before{display:none}.cart-trigger{font-size:.73rem}}
+.quick-visual[style*="url("]:before{display:none}
+
+/* Acceso y registro usan composiciones distintas en escritorio. */
+[data-page="account"] .auth-editorial-visual {
+  background-image: url('/assets/images/acceso-casa-playa.webp');
+  background-position: center 56%;
+}
+[data-page="account"][data-auth-mode="register"] .auth-editorial-visual {
+  background-image: url('/assets/images/editorial-hero.jpg');
+}
+@media (min-width: 981px) {
+  [data-auth-mode="register"] .auth-editorial-layout {
+    grid-template-columns: minmax(0,1.05fr) minmax(420px,.95fr);
+  }
+  [data-auth-mode="register"] .auth-editorial-visual { grid-area: 1 / 1; }
+  [data-auth-mode="register"] .auth-editorial-panel { grid-area: 1 / 2; }
+}
+
+/* Photography follows the content of each view. */
+.editorial-home-visual { background-image: url('/assets/images/inicio-espacios.webp'); }
+.feature-card.architecture .feature-visual { background-image: url('/assets/portfolio/casa-horizonte.webp'); }
+.feature-card.products .feature-visual,
+.quote-illustration { background-image: linear-gradient(0deg,rgba(17,27,22,.22),transparent 65%), url('/assets/images/estudio-diseno.webp'); }
+.project-art,.portfolio-art,.project-main-visual { background:#ebe8de; overflow:hidden; }
+.project-art img,.portfolio-art img,.architecture-board img {
+  display:block; width:100%; height:100%; object-fit:cover; object-position:center;
+}
+.project-main-visual:before { content:none; }
+.project-art .project-no-photo,.portfolio-art .project-no-photo,.project-main-visual .project-no-photo {
+  display:grid; position:static; height:100%; place-items:center; color:#566350; padding:12px; text-align:center;
+}
+.project-image-caption { color:#58645c; font-size:.8rem; margin:8px 0 12px; }

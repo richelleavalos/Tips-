@@ -66,13 +66,13 @@
   function shell(user) {
     const side = $("[data-user-side]");
     const nav = [
-      ["resumen", "/user/", "⌂", "Resumen"],
-      ["datos", "/user/datos.html", "○", "Datos personales"],
-      ["pedidos", "/user/pedidos.html", "▤", "Mis pedidos"],
-      ["seguridad", "/user/seguridad.html", "◇", "Seguridad"],
+      ["resumen", "/user/", '<svg class="tips-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-7h6v7"/></svg>', "Resumen"],
+      ["datos", "/user/datos.html", '<svg class="tips-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 21c0-5 2.8-7 7-7s7 2 7 7"/></svg>', "Datos personales"],
+      ["pedidos", "/user/pedidos.html", '<svg class="tips-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>', "Pedidos y servicios"],
+      ["seguridad", "/user/seguridad.html", '<svg class="tips-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></svg>', "Seguridad"],
     ];
-    side.innerHTML = `<button class="user-mobile-menu user-menu-close" type="button" data-user-menu-close aria-label="Cerrar menú">×</button><a class="user-brand" href="/index.html"><img src="/assets/logos/tips-logo-black.svg" alt="Tips"><div><strong>Tips</strong><small>Mi cuenta</small></div></a><div class="user-side-label">Tu espacio</div><nav class="user-nav" aria-label="Mi cuenta">${nav.map(([key, href, icon, label]) => `<a class="${page === key ? "active" : ""}" ${page === key ? 'aria-current="page"' : ""} href="${href}"><span class="ico" aria-hidden="true">${icon}</span>${label}</a>`).join("")}</nav><div class="user-side-foot"><a href="/tienda.html">← Volver a la tienda</a><button type="button" data-user-logout>Cerrar sesión</button><p class="user-message" role="status" aria-live="polite" data-user-logout-message></p></div>`;
-    $("[data-user-top]").innerHTML = `<div class="user-top-identity"><button class="user-mobile-menu" type="button" data-user-menu aria-controls="user-navigation" aria-expanded="false" aria-label="Abrir menú">☰</button><strong data-user-name>${esc(user.display_name)}</strong></div><a href="/index.html">Ver sitio público</a>`;
+    side.innerHTML = `<button class="user-mobile-menu user-menu-close" type="button" data-user-menu-close aria-label="Cerrar menú">×</button><a class="user-brand" href="/index.html"><img src="/assets/logos/tips-logo-reverse.svg" alt="Tips"><div><strong>Tips</strong><small>Mi cuenta</small></div></a><div class="user-side-label">Tu espacio</div><nav class="user-nav" aria-label="Mi cuenta">${nav.map(([key, href, icon, label]) => `<a class="${page === key ? "active" : ""}" ${page === key ? 'aria-current="page"' : ""} href="${href}"><span class="ico" aria-hidden="true">${icon}</span>${label}</a>`).join("")}</nav><div class="user-side-foot"><a href="/tienda.html">← Volver a la tienda</a><button type="button" data-user-logout>Cerrar sesión</button><p class="user-message" role="status" aria-live="polite" data-user-logout-message></p></div>`;
+    $("[data-user-top]").innerHTML = `<div class="user-top-identity"><button class="user-mobile-menu" type="button" data-user-menu aria-controls="user-navigation" aria-expanded="false" aria-label="Abrir menú"><svg class="tips-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><strong data-user-name>${esc(user.display_name)}</strong></div><a href="/index.html">Ver sitio público</a>`;
     $("[data-user-logout]").addEventListener("click", logout);
     setupMenu();
   }
@@ -152,7 +152,7 @@
         </div>
       </section>
       <section class="user-grid-3 user-dashboard-stats" aria-label="Resumen de cuenta">
-        <article class="user-stat"><span>Pedidos recientes</span><strong>${orders.length}</strong><small>Últimas compras visibles</small></article>
+        <article class="user-stat"><span>Pedidos recientes</span><strong>${orders.length}</strong><small>Todos los pedidos registrados</small></article>
         <article class="user-stat"><span>Estado de cuenta</span><strong>Activa</strong><small>Acceso disponible</small></article>
         <article class="user-stat"><span>Correo</span><strong class="user-stat-email">${esc(data.user.email)}</strong><small>Contacto principal</small></article>
       </section>
@@ -176,8 +176,9 @@
 
   function renderData(data) {
     const root = head("Datos personales", "Cambia tu nombre o correo de forma segura.");
-    root.innerHTML = `<article class="user-card"><form class="user-form" data-user-profile-form><label class="user-field"><span>Nombre</span><input name="display_name" minlength="2" maxlength="120" autocomplete="name" required value="${esc(data.user.display_name)}"></label><label class="user-field"><span>Correo</span><input name="email" type="email" maxlength="180" autocomplete="email" required value="${esc(data.user.email)}"></label><label class="user-field"><span>Contraseña actual</span><input name="current_password" type="password" autocomplete="current-password" aria-describedby="email-password-help"><small id="email-password-help">Solo es necesaria si cambias el correo.</small></label><div><button class="user-btn primary">Guardar cambios</button></div><p class="user-message" role="status" aria-live="polite" aria-atomic="true" data-user-profile-message></p></form></article>`;
+    root.innerHTML = `<article class="user-card"><form class="user-form" data-user-profile-form><label class="user-field"><span>Nombre</span><input name="display_name" minlength="2" maxlength="120" autocomplete="name" required value="${esc(data.user.display_name)}"></label><label class="user-field"><span>Correo</span><input name="email" type="email" maxlength="180" autocomplete="email" required value="${esc(data.user.email)}"></label><label class="user-field"><span>Prefijo internacional</span><input name="country_code" required pattern="\\+[1-9][0-9]{0,3}" value="${esc(data.user.country_code||'+503')}"></label><label class="user-field"><span>Teléfono</span><input name="phone" type="tel" data-phone required value="${esc(data.user.phone||'')}"></label><label class="user-field"><span>Preferencia de contacto</span><select name="contact_preferences"><option value="internal">Avisos internos</option><option value="email">Correo</option><option value="whatsapp">WhatsApp</option></select><small>Preferencia para contacto por TIPS. WhatsApp requiere que una asistente abra la conversación.</small></label><label class="user-field"><span>Contraseña actual</span><input name="current_password" type="password" autocomplete="current-password" aria-describedby="email-password-help"><small id="email-password-help">Solo es necesaria si cambias el correo.</small></label><div><button class="user-btn primary">Guardar cambios</button></div><p class="user-message" role="status" aria-live="polite" aria-atomic="true" data-user-profile-message></p></form></article>`;
     const form = $("[data-user-profile-form]");
+    form.elements.contact_preferences.value = data.user.contact_preferences || "internal";
     let savedEmail = data.user.email;
     form.elements.email.oninput = () => {
       form.elements.current_password.required = form.elements.email.value.trim().toLowerCase() !== savedEmail;
@@ -186,7 +187,7 @@
       event.preventDefault();
       const fd = new FormData(form), message = $("[data-user-profile-message]");
       await submit(form, message, "Guardando…", async () => {
-        const result = await api("/api/account/profile", { method: "POST", body: JSON.stringify({ display_name: fd.get("display_name"), email: fd.get("email"), current_password: fd.get("current_password") }) });
+        const result = await api("/api/account/profile", { method: "POST", body: JSON.stringify({ display_name: fd.get("display_name"), email: fd.get("email"), current_password: fd.get("current_password"), phone: fd.get("phone"), country_code: fd.get("country_code"), contact_preferences: fd.get("contact_preferences") }) });
         savedEmail = result.user.email;
         form.elements.display_name.value = result.user.display_name;
         form.elements.email.value = savedEmail;
@@ -199,8 +200,8 @@
   }
 
   const orderLabels = {
-    pending: "Pendiente", paid: "Pagado", processing: "En preparación",
-    ready: "Listo", shipped: "Enviado", completed: "Completado",
+    received:"Recibido", confirmed:"Confirmado", pending: "Pendiente", paid: "Pagado", processing: "En preparación",
+    ready: "Listo", shipped: "Enviado", completed: "Retirado",
     cancelled: "Cancelado", refunded: "Reembolsado",
   };
   function orderDate(value) {
@@ -211,7 +212,7 @@
     return orders.length ? orders.map(order => `<div class="user-order"><div><strong>${esc(order.public_id)}</strong><small>${esc(orderDate(order.created_at))}</small></div><span class="user-chip">${esc(orderLabels[order.status] || order.status)}</span><strong>${money(order.total_cents)}</strong></div>`).join("") : '<div class="user-empty"><strong>Aún no tienes pedidos.</strong><p>Cuando completes una compra aparecerá aquí.</p><a class="user-btn primary" href="/tienda.html">Explorar la tienda</a></div>';
   }
   function renderOrders(data) {
-    const root = head("Mis pedidos", "Tus últimas 5 compras, con su estado y total.");
+    const root = head("Pedidos y servicios", "Tus últimas 5 compras, con su estado y total.");
     root.innerHTML = `<article class="user-card">${orderList(data.recent_orders || [])}</article>`;
   }
 
