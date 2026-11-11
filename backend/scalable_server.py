@@ -35,8 +35,8 @@ class TipsScalableRequestHandler(TipsAppRequestHandler):
                     c.name AS category_name,c.slug AS category_slug,
                     (SELECT v.id FROM product_variants v WHERE v.product_id=p.id AND v.is_active=1 ORDER BY v.id LIMIT 1) AS first_variant_id,
                     (SELECT v.stock_quantity FROM product_variants v WHERE v.product_id=p.id AND v.is_active=1 ORDER BY v.id LIMIT 1) AS stock_quantity,
-                    (SELECT pi.path FROM product_images pi WHERE pi.product_id=p.id ORDER BY pi.sort_order,pi.id LIMIT 1) AS primary_image,
-                    (SELECT pi.alt_text FROM product_images pi WHERE pi.product_id=p.id ORDER BY pi.sort_order,pi.id LIMIT 1) AS primary_image_alt
+                    (SELECT pi.path FROM product_images pi WHERE pi.product_id=p.id ORDER BY CASE WHEN pi.path LIKE 'assets/catalog/%' THEN 1 ELSE 0 END,pi.sort_order,pi.id LIMIT 1) AS primary_image,
+                    (SELECT pi.alt_text FROM product_images pi WHERE pi.product_id=p.id ORDER BY CASE WHEN pi.path LIKE 'assets/catalog/%' THEN 1 ELSE 0 END,pi.sort_order,pi.id LIMIT 1) AS primary_image_alt
                  FROM products p LEFT JOIN categories c ON c.id=p.category_id WHERE p.is_active=1"""
         params: list[object] = []
         if search:
@@ -66,7 +66,7 @@ class TipsScalableRequestHandler(TipsAppRequestHandler):
                 (SELECT v.option_summary FROM product_variants v WHERE v.product_id=p.id ORDER BY v.id LIMIT 1) AS option_summary,
                 (SELECT v.stock_quantity FROM product_variants v WHERE v.product_id=p.id ORDER BY v.id LIMIT 1) AS stock_quantity,
                 (SELECT COUNT(*) FROM product_images pi WHERE pi.product_id=p.id) AS image_count,
-                (SELECT pi.path FROM product_images pi WHERE pi.product_id=p.id ORDER BY pi.sort_order,pi.id LIMIT 1) AS primary_image
+                (SELECT pi.path FROM product_images pi WHERE pi.product_id=p.id ORDER BY CASE WHEN pi.path LIKE 'assets/catalog/%' THEN 1 ELSE 0 END,pi.sort_order,pi.id LIMIT 1) AS primary_image
                 FROM products p LEFT JOIN categories c ON c.id=p.category_id ORDER BY p.sort_order,p.name"""
             ).fetchall()
         items = []

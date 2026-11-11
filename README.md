@@ -1,142 +1,80 @@
-# Tips — tienda digital y portafolio
+# TIPS v6.7.1 — Pedidos para retiro y servicios de diseño
 
-Aplicación full-stack de Tips Arquitectura, Diseño y Productos desarrollada con HTML, CSS y JavaScript puros, Python (biblioteca estándar) y SQLite.
+## Pedidos y base incluida
 
-## Probar la versión actual
+El ZIP incluye la base principal en `data/tips.db`, con los usuarios anteriores y 150 clientes ficticios adicionales. Cada cliente de muestra tiene un pedido histórico con productos del catálogo. Los pedidos de muestra no consumen inventario actual. Para probar la aplicación en local:
 
-Desde la carpeta del repositorio en VS Code:
+- Correo de cliente: `muestra-001@tips.test` a `muestra-150@tips.test`.
+- Clave de muestra: `TipsMuestra2026!`.
+- Inicia con `python app.py` y usa la base predeterminada, sin configurar `TIPS_DB_PATH` para otra base. En modo producción se desactivan las cuentas de muestra y se revocan sus sesiones.
 
-```powershell
-git pull
-.\.venv\Scripts\Activate.ps1
+Los visitantes pueden guardar la bolsa, el nombre, correo, teléfono y fecha de retiro como borrador. Al entrar o crear una cuenta desde ese flujo, vuelven a revisar y confirmar el pedido. El borrador cifrado y la bolsa se recuperan en el mismo navegador mientras la sesión siga vigente. Guardar el borrador no crea un pedido ni reserva inventario.
+
+La pantalla de inicio de sesión incorpora una imagen de una casa frente al mar generada para TIPS. En escritorio, el registro muestra el formulario a la derecha. En pantallas estrechas, los formularios quedan arriba de su imagen.
+
+Auditoría de diseño: [TIPS v6.6](docs/v6.6/AUDITORIA-DISENO.md).
+
+Proyecto completo basado en TIPS v6.4, con revisión integral v6.5.1.
+
+La revisión v6.5.1 unifica todas las secciones administrativas con el diseño editorial original, identifica la sección activa, corrige el perfil administrativo y los historiales vinculados a la cuenta. Se probaron 10 clientes distintos, una administradora y root mediante Browser; véase [el informe de revisión](docs/v6.5.1/REVISION-INTEGRAL.md). Python + SQLite + HTML/CSS/JavaScript; conserva `python app.py` como punto de entrada. No realiza despliegues ni procesa pagos electrónicos. 2FA sigue siendo opcional.
+
+## Inicio local
+
+```sh
+python -m venv .venv
+# macOS / Linux:
+source .venv/bin/activate
+# Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 python app.py
 ```
 
-Abre `http://127.0.0.1:8000`.
+Abrir http://127.0.0.1:8000. En desarrollo también existe preparación automática de dependencias en `.tips_deps`; la instalación explícita anterior es la opción reproducible. Python 3.10 o superior; probado con Python 3.14.7.
 
-Si ya tienes el servidor abierto cuando haces `git pull`, detenlo con `Ctrl+C` y vuelve a ejecutar `python app.py`.
+**Este ZIP no incluye ninguna base de datos del proyecto original ni el dataset ficticio.** La instalación nueva crea `data/tips.db` y carga el catálogo base. Para actualizar, conservar la base existente y sus claves, siguiendo [la guía de despliegue](docs/v6.5/DESPLIEGUE.md).
 
-SQLite se crea automáticamente en `data/tips.db`. En una base vacía se cargan productos y proyectos de demostración para poder probar los flujos.
+Solo en desarrollo/pruebas se crean las cuentas heredadas `admin@demo.com` y `usuario@demo.com` con contraseña `TipsDemo2026!`, y `root@demo.com` con contraseña temporal `123456789`, que exige cambiarla. En producción no se crean ni se reactivan cuentas demo automáticamente. Las cuentas demo que ya existan en una base anterior requieren revisión administrativa; la migración no las elimina silenciosamente.
 
-## Pantallas disponibles
+## Accesos
 
-- `/` — inicio editorial basado en los wireframes de Tips.
-- `/tienda.html` — catálogo dinámico, filtros, búsqueda, ordenamiento y vista rápida.
-- `/arquitectura.html` — portafolio filtrable, servicios y proceso.
-- `/proyecto.html?id=1` — ficha detallada de proyecto.
-- `/contacto.html` — solicitud de cotización guardada en SQLite.
-- `/cuenta.html` — registro e inicio de sesión con email/contraseña.
-- `/checkout.html` — checkout de prueba; exige una cuenta iniciada.
-- `/admin/` — dashboard protegido para administradores.
+- `/tienda.html`: catálogo, variantes, personalizaciones y carrito.
+- `/checkout.html`: solicitud de retiro sin pagar en línea, también como invitado.
+- `/servicios-de-diseno.html`: servicios y portafolio; `/arquitectura.html` redirige.
+- `/contacto.html`: solicitud, fotos privadas, progreso y borrador de 7 días.
+- `/user/pedidos.html`: historial completo de pedidos y diseño con filtros y páginas.
+- `/admin/`: centro de trabajo con expedientes, avisos y acciones.
+- `/admin/calendario.html`, `/admin/reportes.html`, `/admin/actividad.html`.
 
-El carrito aparece como panel lateral y solo ocupa la pantalla completa cuando el usuario lo solicita o entra al checkout.
+## Pruebas independientes
 
-## Crear las dos cuentas administradoras
-
-No existe registro público de administradores. Crea cada cuenta desde la terminal:
-
-```powershell
-python scripts/create_admin.py
+```sh
+python -m pip install -r requirements-dev.txt
+python -m pytest tests -q
+python scripts/generate_test_data.py --output test-data/tips-test.db
 ```
 
-Introduce correo, nombre y una contraseña de al menos 12 caracteres. Luego inicia sesión en `/cuenta.html` y abre `/admin/`.
+El generador solo admite un archivo llamado `tips-test.db` dentro de una carpeta `test-data`; `--reset` reinicia exclusivamente ese destino. Semilla: 650. Contiene 223 usuarios ficticios, 100 pedidos, 100 solicitudes, fotos, notificaciones e historiales. Usuario de ambas modalidades: `cliente000@tips.test` / `SoloPruebas2026!`.
 
-## Estructura de vistas
+Para navegador, iniciar otro proceso apuntando a esa base con `TIPS_DB_PATH` y luego:
 
-El frontend está organizado por responsabilidad:
-
-```text
-frontend/
-  global/             # Marca y utilidades visuales compartidas (css/ y js/)
-  admin/              # Panel administrativo: vistas/, css/ y js/
-  usuario/            # Experiencia del cliente: css/, js/ y vistas/
-    vistas/publicas/  # Inicio, catálogo, cuenta, checkout y portafolio
-    vistas/cuenta/    # Resumen, datos personales, pedidos y seguridad
+```sh
+python -m playwright install chromium
+python tests/e2e_v65.py
 ```
 
-`backend/` conserva los servicios Python; `sql/`, `scripts/` y `tests/` mantienen sus responsabilidades. Los logos y medios permanecen en `assets/` para conservar rutas guardadas en SQLite.
+`TIPS_TEST_BASE_URL` debe apuntar a localhost; `TIPS_EVIDENCE_DIR` controla las capturas. La suite crea cuentas y operaciones ficticias adicionales. No ejecutarla contra una base real, aunque esté en localhost.
 
-El servidor mantiene las URLs `/`, `/tienda.html`, `/admin/` y `/user/`, mediante `backend/frontend_paths.py`. Las rutas físicas de las vistas no son accesibles desde el navegador. Los estilos de cada contexto se sirven desde una única hoja canónica; las capas visuales antiguas fueron eliminadas para evitar mezclas entre diseños.
+## Documentación de la entrega
 
-Consulta [el registro de reorganización y UX](docs/reorganizacion-fofo.md) para ver todos los movimientos, motivos, límites y validaciones.
+- [Resumen ejecutivo](docs/v6.5/RESUMEN-EJECUTIVO.md)
+- [Auditoría](docs/v6.5/AUDITORIA.md)
+- [Pruebas y limitaciones](docs/v6.5/PRUEBAS.md)
+- [Base de datos y conservación](docs/v6.5/BASE-DE-DATOS.md)
+- [Actualización, respaldo y recuperación](docs/v6.5/DESPLIEGUE.md)
+- [Matriz de aceptación](docs/v6.5/ACEPTACION.md)
 
-Ambos administradores tienen el mismo rol y permisos base.
+Los documentos antiguos se conservan como referencia histórica; sus instrucciones de pago no se aplican a v6.5.
 
-## Pago
+### Imágenes del portafolio
 
-El checkout actual utiliza el proveedor `mock`. Sirve para probar carrito → autenticación → datos de envío → pedido → pago simulado → actualización de inventario → dashboard, pero **no procesa tarjetas reales**.
-
-La integración real se conectará cuando se defina la pasarela de pago. La moneda del sistema es USD.
-
-## Autenticación
-
-Actualmente funciona email + contraseña segura con PBKDF2 y bloqueo temporal después de intentos fallidos. La arquitectura de base de datos ya contempla OAuth; el botón de Google se muestra como próximo paso porque todavía faltan las credenciales OAuth del proyecto. 2FA administrativo también queda para la etapa de integración.
-
-## Seguridad implementada en la base actual
-
-- CSRF por sesión para operaciones de escritura.
-- CORS restringido.
-- Cookies de sesión HttpOnly y SameSite.
-- Contraseñas con PBKDF2-HMAC-SHA256 y salt aleatorio.
-- Bloqueo temporal después de intentos fallidos de acceso.
-- SQL parametrizado y claves foráneas SQLite.
-- Rate limiting.
-- CSP, X-Frame-Options, nosniff y otras cabeceras defensivas.
-- Bloqueo del acceso web a `backend`, `data`, `sql`, `tests`, `.git` y `.github`.
-- Validación de tamaños y tipos de JSON.
-
-Antes de un despliegue público se debe completar la pasarela, HTTPS, almacenamiento de imágenes, Google OAuth/2FA, backups y revisión de seguridad de producción.
-
-## Pruebas
-
-```powershell
-python -m unittest discover -s tests -v
-```
-
-Las regresiones de los formularios de usuario también se pueden ejecutar con Node.js, sin instalar paquetes:
-
-```bash
-node --test tests/test_user_area.cjs
-```
-
-Node.js solo se usa para estas pruebas; iniciar la aplicación sigue requiriendo únicamente Python.
-
-GitHub Actions ejecuta compilación y pruebas automáticamente al hacer `push` a `tips`.
-
-## Flujo Git + VS Code
-
-Para recibir cambios hechos en GitHub:
-
-```powershell
-git pull
-```
-
-Para subir tus cambios desde VS Code:
-
-```powershell
-git add .
-git commit -m "Descripción corta del cambio"
-git push
-```
-
-Git conserva el historial, por lo que no necesitas crear carpetas o archivos `v1`, `v2`, `final`, etc.
-
-## Estado funcional
-
-La versión actual permite probar la mayoría del recorrido público: catálogo, búsqueda, carrito, cuenta, compra simulada, portafolio y cotización. El dashboard ya muestra métricas, pedidos, cotizaciones e inventario real de SQLite y presenta en navegación todos los módulos definidos para v1. Los CRUD completos de cada módulo administrativo, carga real de imágenes/logos, Google OAuth, 2FA, promociones avanzadas, reportes completos y pasarela real son las siguientes capas de implementación.
-
-## Arquitectura orientada a objetos y autodocumentación
-
-La aplicación usa una arquitectura orientada a objetos sin frameworks externos. El ciclo de vida se concentra en `TipsApplication`; SQLite en `DatabaseManager`; seguridad en `PasswordHasher`, `SessionTokenManager`, `CsrfProtection`, `SecurityPolicy` y `RateLimiter`; y la interfaz HTTP continúa separada en handlers por responsabilidad.
-
-El JavaScript principal del cliente utiliza `ApiClient` y `TipsClientApp` para separar transporte, estado y comportamiento de interfaz. Los módulos Python incluyen docstrings y el frontend incorpora comentarios de propósito por archivo.
-
-La explicación completa de responsabilidades, herencia y compatibilidad está en [`docs/arquitectura-poo.md`](docs/arquitectura-poo.md).
-
-
-
-## Diseño editorial estable — v5
-
-La v5 mantiene una sola fuente visual por contexto y corrige el comportamiento de overlays en Safari. Los modales, el carrito y los wizards permanecen anclados al viewport y administran su propio scroll; la animación global nunca transforma `body` ni `html`.
-
-El panel administrativo y el área privada del cliente comparten el dashboard editorial aprobado: sidebar verde profundo, superficies marfil, títulos serif, controles sobrios y tablas de líneas finas. `tests/test_frontend_hygiene.py` impide que regresen selectores de roles mezclados o capas visuales antiguas. Consulta `docs/sistema-visual.md`.
+Seis visualizaciones conceptuales generadas para las fichas de proyectos y dos imágenes para inicio y estudio. Las portadas se incorporan por proyecto al iniciar y se conservan las imágenes propias que ya existan. Los archivos y prompts están documentados en `docs/v6.7.1/PROMPTS-IMAGENES.json`.

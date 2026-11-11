@@ -115,8 +115,8 @@ class TipsAppRequestHandler(TipsAdminRequestHandler):
                     c.name AS category_name,c.slug AS category_slug,
                     (SELECT v.id FROM product_variants v WHERE v.product_id=p.id AND v.is_active=1 ORDER BY v.id LIMIT 1) AS first_variant_id,
                     (SELECT v.stock_quantity FROM product_variants v WHERE v.product_id=p.id AND v.is_active=1 ORDER BY v.id LIMIT 1) AS stock_quantity,
-                    (SELECT pi.path FROM product_images pi WHERE pi.product_id=p.id ORDER BY pi.sort_order,pi.id LIMIT 1) AS primary_image,
-                    (SELECT pi.alt_text FROM product_images pi WHERE pi.product_id=p.id ORDER BY pi.sort_order,pi.id LIMIT 1) AS primary_image_alt
+                    (SELECT pi.path FROM product_images pi WHERE pi.product_id=p.id ORDER BY CASE WHEN pi.path LIKE 'assets/catalog/%' THEN 1 ELSE 0 END,pi.sort_order,pi.id LIMIT 1) AS primary_image,
+                    (SELECT pi.alt_text FROM product_images pi WHERE pi.product_id=p.id ORDER BY CASE WHEN pi.path LIKE 'assets/catalog/%' THEN 1 ELSE 0 END,pi.sort_order,pi.id LIMIT 1) AS primary_image_alt
                  FROM products p LEFT JOIN categories c ON c.id=p.category_id WHERE p.is_active=1"""
         params: list[object] = []
         if search:
@@ -178,7 +178,7 @@ class TipsAppRequestHandler(TipsAdminRequestHandler):
         """Devuelve el perfil del usuario autenticado y sus pedidos recientes."""
         with connect(self.settings) as db:
             row = db.execute(
-                "SELECT id,email,display_name,role,is_active,created_at,updated_at,password_hash FROM users WHERE id=?",
+                "SELECT id,email,display_name,role,is_active,created_at,updated_at,password_hash,must_change_password,two_factor_enabled FROM users WHERE id=?",
                 (user["id"],),
             ).fetchone()
             orders = db.execute(
@@ -189,6 +189,7 @@ class TipsAppRequestHandler(TipsAdminRequestHandler):
             "user": {
                 "id": row["id"], "email": row["email"], "display_name": row["display_name"],
                 "role": row["role"], "created_at": row["created_at"], "has_password": bool(row["password_hash"]),
+                "must_change_password": bool(row["must_change_password"]), "two_factor_enabled": bool(row["two_factor_enabled"]),
             },
             "recent_orders": [dict(order) for order in orders],
         })
@@ -200,6 +201,9 @@ class TipsAppRequestHandler(TipsAdminRequestHandler):
         current_password = str(data.get("current_password", ""))
         if not 2 <= len(display_name) <= 120 or not EMAIL_RE.match(email):
             self._json({"error": "Revisa tu nombre y correo."}, HTTPStatus.BAD_REQUEST)
+            return
+        if user.get("role") == "superadmin" and email != "root@demo.com":
+            self._json({"error": "El correo del superadmin raíz debe permanecer como root@demo.com."}, HTTPStatus.CONFLICT)
             return
         try:
             with transaction(self.settings) as db:
@@ -234,12 +238,13 @@ class TipsAppRequestHandler(TipsAdminRequestHandler):
             except ValueError as exc:
                 self._json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
                 return
-            db.execute("UPDATE users SET password_hash=?,updated_at=? WHERE id=?", (encoded, iso(utc_now()), user["id"]))
+            self._invalidate_recovery(db, user["id"])
+            db.execute("UPDATE users SET password_hash=?,must_change_password=0,updated_at=? WHERE id=?", (encoded, iso(utc_now()), user["id"]))
             raw = self._read_session_cookie()
             if raw:
                 db.execute("UPDATE sessions SET revoked_at=? WHERE user_id=? AND token_hash<>? AND revoked_at IS NULL", (iso(utc_now()), user["id"], session_token_hash(raw)))
             self._audit(db, user, "password_change", "user", str(user["id"]), {})
-        self._json({"ok": True})
+        self._json({"ok": True, "must_change_password": False, "two_factor_setup_required": False})
 
     def _deactivate_account(self, user: dict[str, object], data: dict[str, object]) -> None:
         """Desactiva la cuenta actual y revoca todas sus sesiones abiertas."""
@@ -253,8 +258,11 @@ class TipsAppRequestHandler(TipsAdminRequestHandler):
             if not current or not current["password_hash"] or not verify_password(current_password, current["password_hash"]):
                 self._json({"error": "La contraseña actual no es correcta."}, HTTPStatus.UNAUTHORIZED)
                 return
+            if current["role"] == "superadmin":
+                self._json({"error": "La cuenta superadmin raíz no puede desactivarse."}, HTTPStatus.CONFLICT)
+                return
             if current["role"] == "admin":
-                active_admins = db.execute("SELECT COUNT(*) FROM users WHERE role='admin' AND is_active=1").fetchone()[0]
+                active_admins = db.execute("SELECT COUNT(*) FROM users WHERE role IN('admin','superadmin') AND is_active=1").fetchone()[0]
                 if active_admins <= 1:
                     self._json({"error": "No puedes desactivar la última cuenta administradora activa."}, HTTPStatus.CONFLICT)
                     return
@@ -275,7 +283,7 @@ class TipsAppRequestHandler(TipsAdminRequestHandler):
                 (SELECT v.option_summary FROM product_variants v WHERE v.product_id=p.id ORDER BY v.id LIMIT 1) AS option_summary,
                 (SELECT v.stock_quantity FROM product_variants v WHERE v.product_id=p.id ORDER BY v.id LIMIT 1) AS stock_quantity,
                 (SELECT COUNT(*) FROM product_images pi WHERE pi.product_id=p.id) AS image_count,
-                (SELECT pi.path FROM product_images pi WHERE pi.product_id=p.id ORDER BY pi.sort_order,pi.id LIMIT 1) AS primary_image
+                (SELECT pi.path FROM product_images pi WHERE pi.product_id=p.id ORDER BY CASE WHEN pi.path LIKE 'assets/catalog/%' THEN 1 ELSE 0 END,pi.sort_order,pi.id LIMIT 1) AS primary_image
                 FROM products p LEFT JOIN categories c ON c.id=p.category_id ORDER BY p.sort_order,p.name"""
             ).fetchall()
         self._json({"user": user, "items": [dict(row) for row in rows]})
@@ -368,6 +376,7 @@ class TipsAppRequestHandler(TipsAdminRequestHandler):
                 if not product:
                     self._json({"error": "Producto no encontrado."}, HTTPStatus.NOT_FOUND)
                     return
+                db.execute("DELETE FROM product_images WHERE product_id=? AND path LIKE 'assets/catalog/%'", (product_id,))
                 count = db.execute("SELECT COUNT(*) FROM product_images WHERE product_id=?", (product_id,)).fetchone()[0]
                 if count >= MAX_PRODUCT_IMAGES:
                     self._json({"error": f"Cada producto puede tener un máximo de {MAX_PRODUCT_IMAGES} imágenes."}, HTTPStatus.CONFLICT)

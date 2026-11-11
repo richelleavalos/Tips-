@@ -1,17 +1,23 @@
-"""Punto de entrada ejecutable de Tips.
+"""Punto de entrada ejecutable de TIPS.
 
-La lógica de arranque vive en ``backend.application.TipsApplication``. Este
-archivo se mantiene deliberadamente pequeño para que ejecutar ``python app.py``
-sea obvio y no mezcle configuración, base de datos y servidor HTTP.
+La lógica de arranque vive en ``backend.application.TipsApplication``. El
+import se realiza dentro de ``main`` para que el bootstrap de dependencias pueda
+mostrar un mensaje limpio si la primera instalación local no puede completarse.
 """
 
 from __future__ import annotations
 
-from backend.application import TipsApplication
-
 
 def main() -> None:
-    """Construye la aplicación desde el entorno y ejecuta el servidor local."""
+    """Prepara dependencias, construye la aplicación y ejecuta el servidor."""
+    try:
+        from backend.application import TipsApplication
+    except (ModuleNotFoundError, RuntimeError) as exc:
+        if "cryptography" not in str(exc).lower():
+            raise
+        print(f"\n[TIPS] {exc}\n")
+        raise SystemExit(1) from None
+
     TipsApplication.from_environment().run()
 
 

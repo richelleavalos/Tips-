@@ -1,9 +1,8 @@
-"""Configuración central de Tips.
+"""Configuración central de TIPS.
 
-Todas las variables de entorno se interpretan aquí para evitar conversiones y
-valores por defecto dispersos por el proyecto. ``Settings`` es inmutable y
-representa la configuración efectiva; ``EnvironmentReader`` contiene las
-reglas para leer y validar el entorno del proceso.
+Los secretos operativos se leen exclusivamente desde variables de entorno. En
+producción no se generan claves efímeras: la aplicación falla de forma segura
+si falta una clave requerida.
 """
 
 from __future__ import annotations
@@ -23,13 +22,11 @@ class EnvironmentReader:
 
     @staticmethod
     def text(name: str, default: str | None = None) -> str | None:
-        """Devuelve una variable textual sin imponer reglas de negocio adicionales."""
         value = os.getenv(name)
         return default if value is None else value
 
     @classmethod
     def boolean(cls, name: str, default: bool = False) -> bool:
-        """Interpreta valores habituales de verdad como un booleano de Python."""
         value = os.getenv(name)
         if value is None:
             return default
@@ -37,7 +34,6 @@ class EnvironmentReader:
 
     @staticmethod
     def integer(name: str, default: int, minimum: int, maximum: int) -> int:
-        """Lee un entero y garantiza que permanezca dentro del rango permitido."""
         raw = os.getenv(name)
         if raw is None:
             return default
@@ -51,7 +47,6 @@ class EnvironmentReader:
 
     @staticmethod
     def origins() -> tuple[str, ...]:
-        """Normaliza la lista de orígenes autorizados para CORS."""
         raw = os.getenv(
             "TIPS_ALLOWED_ORIGINS",
             "http://127.0.0.1:8000,http://localhost:8000",
@@ -61,7 +56,12 @@ class EnvironmentReader:
 
 @dataclass(frozen=True)
 class Settings:
-    """Configuración inmutable que consumen todos los componentes de Tips."""
+    """Configuración inmutable consumida por todos los componentes de TIPS.
+
+    Los últimos campos tienen valores por defecto para mantener compatibilidad
+    con pruebas y scripts de versiones anteriores que construían ``Settings``
+    por posición.
+    """
 
     environment: str
     host: str
@@ -73,18 +73,31 @@ class Settings:
     session_ttl_seconds: int
     max_request_bytes: int
     rate_limit_per_minute: int
+    field_encryption_key: str = "tips-development-field-key-change-me"
+    payment_webhook_secret: str = "tips-development-sandbox-webhook-secret"
+    payment_provider: str = "sandbox"
+    inventory_reservation_minutes: int = 15
+    password_reset_minutes: int = 30
+    two_factor_challenge_minutes: int = 5
 
     @classmethod
     def load(cls) -> "Settings":
-        """Construye y valida la configuración a partir del entorno del proceso."""
         reader = EnvironmentReader()
         environment = (reader.text("TIPS_ENV", "development") or "development").strip().lower()
         supplied_secret = reader.text("TIPS_SECRET_KEY")
-        if environment == "production" and not supplied_secret:
-            raise RuntimeError("TIPS_SECRET_KEY es obligatorio en producción.")
+        supplied_field_key = reader.text("TIPS_FIELD_ENCRYPTION_KEY")
+        supplied_webhook_secret = reader.text("TIPS_PAYMENT_WEBHOOK_SECRET")
 
-        # Una ruta relativa se interpreta respecto de la raíz del proyecto para
-        # que ejecutar app.py desde otra carpeta no cambie el archivo utilizado.
+        if environment == "production":
+            missing = [
+                name for name, value in (
+                    ("TIPS_SECRET_KEY", supplied_secret),
+                    ("TIPS_FIELD_ENCRYPTION_KEY", supplied_field_key),
+                ) if not value
+            ]
+            if missing:
+                raise RuntimeError("Faltan secretos obligatorios en producción: " + ", ".join(missing))
+
         database_raw = reader.text("TIPS_DB_PATH")
         database_path = Path(database_raw).expanduser() if database_raw else BASE_DIR / "data" / "tips.db"
         if not database_path.is_absolute():
@@ -96,11 +109,15 @@ class Settings:
             port=reader.integer("TIPS_PORT", 8000, 1, 65535),
             database_path=database_path,
             allowed_origins=reader.origins(),
-            # En desarrollo se genera una clave efímera; producción exige una
-            # clave estable mediante TIPS_SECRET_KEY para no invalidar sesiones.
             secret_key=supplied_secret or secrets.token_urlsafe(48),
             secure_cookies=reader.boolean("TIPS_SECURE_COOKIES", environment == "production"),
             session_ttl_seconds=reader.integer("TIPS_SESSION_TTL_SECONDS", 28800, 900, 2592000),
             max_request_bytes=reader.integer("TIPS_MAX_REQUEST_BYTES", 1048576, 16384, 10485760),
             rate_limit_per_minute=reader.integer("TIPS_RATE_LIMIT_PER_MINUTE", 120, 10, 10000),
+            field_encryption_key=supplied_field_key or "tips-development-field-key-change-me",
+            payment_webhook_secret=supplied_webhook_secret or "tips-development-sandbox-webhook-secret",
+            payment_provider=(reader.text("TIPS_PAYMENT_PROVIDER", "sandbox") or "sandbox").strip().lower(),
+            inventory_reservation_minutes=reader.integer("TIPS_INVENTORY_RESERVATION_MINUTES", 15, 5, 120),
+            password_reset_minutes=reader.integer("TIPS_PASSWORD_RESET_MINUTES", 30, 5, 180),
+            two_factor_challenge_minutes=reader.integer("TIPS_2FA_CHALLENGE_MINUTES", 5, 1, 30),
         )

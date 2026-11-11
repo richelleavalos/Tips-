@@ -8,6 +8,9 @@ VIEW_ROUTES = {
     "/index.html": "frontend/usuario/vistas/publicas/index.html",
     "/arquitectura.html": "frontend/usuario/vistas/publicas/arquitectura.html",
     "/cuenta.html": "frontend/usuario/vistas/publicas/cuenta.html",
+    "/change-password.html": "frontend/usuario/vistas/publicas/change-password.html",
+    "/setup-2fa.html": "frontend/usuario/vistas/publicas/setup-2fa.html",
+    "/recuperar.html": "frontend/usuario/vistas/publicas/recuperar.html",
     "/proyecto.html": "frontend/usuario/vistas/publicas/proyecto.html",
     "/checkout.html": "frontend/usuario/vistas/publicas/checkout.html",
     "/tienda.html": "frontend/usuario/vistas/publicas/tienda.html",
@@ -55,4 +58,27 @@ ASSET_ROUTES = {
     "/frontend/admin/js/admin-product-payload.js": "frontend/admin/js/admin-product-payload.js",
     "/frontend/global/js/motion-loader.js": "frontend/global/js/motion-loader.js",
     "/frontend/global/js/motion-runtime.js": "frontend/global/js/motion-runtime.js",
+    "/frontend/global/js/auth-security.js": "frontend/global/js/auth-security.js",
+    "/frontend/global/js/ui-foundation.js": "frontend/global/js/ui-foundation.js",
+    "/frontend/global/css/components.css": "frontend/global/css/components.css",
 }
+
+# Extensiones compatibles de TIPS 6.5.
+VIEW_ROUTES.update({
+    "/seguimiento.html": "frontend/usuario/vistas/publicas/seguimiento.html",
+    "/servicios-de-diseno.html": "frontend/usuario/vistas/publicas/arquitectura.html",
+    "/admin/trabajo.html": "frontend/admin/vistas/trabajo.html",
+    "/admin/calendario.html": "frontend/admin/vistas/trabajo.html",
+    "/admin/actividad.html": "frontend/admin/vistas/trabajo.html",
+})
+for route in ("/admin/", "/admin/index.html", "/admin/pedidos.html", "/admin/cotizaciones.html", "/admin/reportes.html", "/admin/ventas.html"):
+    VIEW_ROUTES[route] = "frontend/admin/vistas/trabajo.html"
+for path in ("frontend/global/js/operations.js", "frontend/global/css/operations.css", "frontend/usuario/js/design-form.js", "frontend/global/js/phone.js"):
+    ASSET_ROUTES["/"+path] = path
+
+VIEW_ROUTES["/user/pedidos.html"] = "frontend/usuario/vistas/publicas/seguimiento.html"
+
+ASSET_ROUTES.update({
+    "/frontend/global/css/view-transitions.css": "frontend/global/css/view-transitions.css",
+    "/frontend/global/js/view-transitions.js": "frontend/global/js/view-transitions.js",
+})

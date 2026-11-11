@@ -1,0 +1,37 @@
+{
+  "modo": "Generador de imágenes integrado",
+  "imagenes": [
+    {
+      "archivo": "assets/portfolio/casa-horizonte.webp",
+      "prompt": "Landscape 3:2 high-end architectural editorial photograph. Valle de Bravo Mexico renovated hillside family house, interior living dining flowing into wooded garden, black framed folding doors, warm oak, pale plaster, morning natural light. Photorealistic professional architecture photography, believable construction and warm natural materials, restrained palette, ample framing, distinct recognizable architectural subject centered for responsive crops, no people, logos, captions, watermarks or readable text."
+    },
+    {
+      "archivo": "assets/portfolio/oficina-bosque.webp",
+      "prompt": "Landscape 3:2 high-end architectural editorial photograph. San Salvador warm small architecture office, flexible oak desks with laptops, planting, distinct glass meeting room and break bench, contemporary professional workspace. Photorealistic professional architecture photography, believable construction and warm natural materials, restrained palette, ample framing, distinct recognizable architectural subject centered for responsive crops, no people, logos, captions, watermarks or readable text."
+    },
+    {
+      "archivo": "assets/portfolio/casa-alero.webp",
+      "prompt": "Landscape 3:2 high-end architectural editorial photograph. La Libertad El Salvador compact passive tropical residence, very deep roof overhang shading open breezeway, operable louvered openings showing cross ventilation, local stone and timber, lush courtyard. Photorealistic professional architecture photography, believable construction and warm natural materials, restrained palette, ample framing, distinct recognizable architectural subject centered for responsive crops, no people, logos, captions, watermarks or readable text."
+    },
+    {
+      "archivo": "assets/portfolio/torre-laguna.webp",
+      "prompt": "Landscape 3:2 high-end architectural editorial photograph. San Salvador contemporary high-rise apartment interior, panoramic city and distant volcano, understated integrated floor-to-ceiling walnut storage and flush cabinets, calm modern residential living. Photorealistic professional architecture photography, believable construction and warm natural materials, restrained palette, ample framing, distinct recognizable architectural subject centered for responsive crops, no people, logos, captions, watermarks or readable text."
+    },
+    {
+      "archivo": "assets/portfolio/casa-patio.webp",
+      "prompt": "Landscape 3:2 high-end architectural editorial photograph. Santa Tecla El Salvador renovated courtyard home, an existing mature tree and planting in open central patio, surrounding covered family gathering and circulation, terracotta and warm limewashed walls. Photorealistic professional architecture photography, believable construction and warm natural materials, restrained palette, ample framing, distinct recognizable architectural subject centered for responsive crops, no people, logos, captions, watermarks or readable text."
+    },
+    {
+      "archivo": "assets/portfolio/estudio-creativo.webp",
+      "prompt": "Landscape 3:2 high-end architectural editorial photograph. Antiguo Cuscatlán small creative workshop, movable tables on castors, pin-up wall with abstract blank sample boards, material samples and compact meeting/exhibition area, pale timber. Photorealistic professional architecture photography, believable construction and warm natural materials, restrained palette, ample framing, distinct recognizable architectural subject centered for responsive crops, no people, logos, captions, watermarks or readable text."
+    },
+    {
+      "archivo": "assets/images/estudio-diseno.webp",
+      "prompt": "Landscape 3:2 high-end architectural editorial photograph. Boutique Salvadoran architecture and interior design studio in use, wide drafting table with material samples, architectural scale model and plans without readable writing, cabinetry and shelves, warm natural light. Clearly a professional studio workspace, no people.. Photorealistic professional architecture photography, believable construction and warm natural materials, restrained palette, ample framing, distinct recognizable architectural subject centered for responsive crops, no people, logos, captions, watermarks or readable text."
+    },
+    {
+      "archivo": "assets/images/inicio-espacios.webp",
+      "prompt": "Wide 3:2 luxury editorial architecture photograph for TIPS, a real-feeling contemporary Salvadoran living and dining room with garden-facing glass, warm timber and pale textured walls, sculptural ceramic objects and one linen sofa, warm daylight, restrained contemporary Latin American design, balanced composition with key forms in center, photograph from room corner, show the architecture and furnishings together. No text, no people, no logos."
+    }
+  ]
+}

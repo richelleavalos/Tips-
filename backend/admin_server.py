@@ -10,12 +10,13 @@ from typing import Any
 
 from .config import Settings
 from .database import connect, transaction
-from .security import RateLimiter
-from .server import TipsRequestHandler, iso, utc_now
+from .security import FieldCipher, RateLimiter, hash_password
+from .orders import InvalidOrderTransition, OrderStateMachine
+from .server import EMAIL_RE, TipsRequestHandler, iso, utc_now
 
 SETTING_KEY_RE = re.compile(r"^[a-z][a-z0-9_-]{0,63}$")
 HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
-ORDER_STATUSES = {"pending", "paid", "processing", "ready", "shipped", "completed", "cancelled", "refunded"}
+ORDER_STATUSES = {"pending_payment", "paid", "payment_failed", "processing", "ready", "shipped", "completed", "cancelled", "expired", "refunded"}
 QUOTE_STATUSES = {"new", "contacted", "qualified", "closed", "archived"}
 STOCK_STATUSES = {"available", "low", "out", "made_to_order"}
 LOGO_VARIANTS = {"orange", "green", "black", "brown"}
@@ -66,6 +67,7 @@ class TipsAdminRequestHandler(TipsRequestHandler):
                 "/api/admin/quotes/update": lambda: self._update_quote(user, data),
                 "/api/admin/promotions/save": lambda: self._save_promotion(user, data),
                 "/api/admin/users/update": lambda: self._update_user(user, data),
+                "/api/admin/users/create": lambda: self._create_user(user, data),
             }
             handler = routes.get(path)
             if handler:
@@ -166,7 +168,8 @@ class TipsAdminRequestHandler(TipsRequestHandler):
         self._json({"user": user, "items": [dict(r) for r in rows]})
 
     def _admin_orders(self, user: dict[str, object]) -> None:
-        """Devuelve los pedidos recientes con sus datos operativos."""
+        """Devuelve pedidos desencriptando datos sensibles únicamente al admin autenticado."""
+        cipher = FieldCipher(self.settings.field_encryption_key)
         with connect(self.settings) as db:
             rows = db.execute(
                 "SELECT id,public_id,email,customer_name,phone,status,currency,total_cents,shipping_address_json,created_at,updated_at FROM orders ORDER BY id DESC LIMIT 200"
@@ -175,26 +178,40 @@ class TipsAdminRequestHandler(TipsRequestHandler):
         for row in rows:
             item = dict(row)
             try:
-                item["shipping_address"] = json.loads(item.pop("shipping_address_json") or "{}")
-            except json.JSONDecodeError:
+                item["phone"] = cipher.decrypt(item.get("phone"), aad="order-phone")
+            except Exception:
+                item["phone"] = ""
+            try:
+                raw_address = cipher.decrypt(item.pop("shipping_address_json"), aad="order-shipping") or "{}"
+                item["shipping_address"] = json.loads(raw_address)
+            except Exception:
                 item["shipping_address"] = {}
-                item.pop("shipping_address_json", None)
             items.append(item)
         self._json({"user": user, "items": items})
 
     def _admin_quotes(self, user: dict[str, object]) -> None:
-        """Devuelve las solicitudes de cotización registradas en el sistema."""
+        """Devuelve cotizaciones y desencripta contacto/mensaje al consultar."""
+        cipher = FieldCipher(self.settings.field_encryption_key)
         with connect(self.settings) as db:
             rows = db.execute(
                 "SELECT id,name,contact,project_type,message,status,internal_notes,created_at,updated_at FROM quote_requests ORDER BY id DESC LIMIT 200"
             ).fetchall()
-        self._json({"user": user, "items": [dict(r) for r in rows]})
+        items = []
+        for row in rows:
+            item = dict(row)
+            for key, aad in (("contact", "quote-contact"), ("message", "quote-message"), ("internal_notes", "quote-notes")):
+                try:
+                    item[key] = cipher.decrypt(item.get(key), aad=aad) or ""
+                except Exception:
+                    item[key] = ""
+            items.append(item)
+        self._json({"user": user, "items": items})
 
     def _admin_users(self, user: dict[str, object]) -> None:
         """Devuelve las cuentas administrables y sus estados actuales."""
         with connect(self.settings) as db:
             rows = db.execute(
-                "SELECT id,email,display_name,role,is_active,failed_login_count,locked_until,created_at,updated_at FROM users ORDER BY created_at DESC LIMIT 300"
+                "SELECT id,email,display_name,role,must_change_password,two_factor_enabled,is_active,failed_login_count,locked_until,created_at,updated_at FROM users ORDER BY created_at DESC LIMIT 300"
             ).fetchall()
         self._json({"user": user, "items": [dict(r) for r in rows]})
 
@@ -311,16 +328,21 @@ class TipsAdminRequestHandler(TipsRequestHandler):
         self._json({"ok": True, "id": project_id})
 
     def _update_order(self, user: dict[str, object], data: dict[str, object]) -> None:
-        """Cambia el estado operativo de un pedido existente."""
+        """Cambia estados operativos respetando la máquina de estados del pedido."""
         order_id = data.get("id")
         status = str(data.get("status", "")).strip()
         if not isinstance(order_id, int) or status not in ORDER_STATUSES:
             self._json({"error": "Pedido o estado inválido."}, HTTPStatus.BAD_REQUEST)
             return
         with transaction(self.settings) as db:
-            exists = db.execute("SELECT id,public_id FROM orders WHERE id=?", (order_id,)).fetchone()
+            exists = db.execute("SELECT id,public_id,status FROM orders WHERE id=?", (order_id,)).fetchone()
             if not exists:
                 self._json({"error": "Pedido no encontrado."}, HTTPStatus.NOT_FOUND)
+                return
+            try:
+                OrderStateMachine.validate(exists["status"], status, payment_event=False)
+            except InvalidOrderTransition as exc:
+                self._json({"error": str(exc)}, HTTPStatus.CONFLICT)
                 return
             db.execute("UPDATE orders SET status=?,updated_at=? WHERE id=?", (status, iso(utc_now()), order_id))
             self._audit(db, user, "update_status", "order", str(order_id), {"status": status, "public_id": exists["public_id"]})
@@ -334,12 +356,13 @@ class TipsAdminRequestHandler(TipsRequestHandler):
         if not isinstance(quote_id, int) or status not in QUOTE_STATUSES or len(notes) > 3000:
             self._json({"error": "Cotización, estado o notas inválidas."}, HTTPStatus.BAD_REQUEST)
             return
+        cipher = FieldCipher(self.settings.field_encryption_key)
         with transaction(self.settings) as db:
             exists = db.execute("SELECT id FROM quote_requests WHERE id=?", (quote_id,)).fetchone()
             if not exists:
                 self._json({"error": "Cotización no encontrada."}, HTTPStatus.NOT_FOUND)
                 return
-            db.execute("UPDATE quote_requests SET status=?,internal_notes=?,updated_at=? WHERE id=?", (status, notes, iso(utc_now()), quote_id))
+            db.execute("UPDATE quote_requests SET status=?,internal_notes=?,updated_at=? WHERE id=?", (status, cipher.encrypt(notes, aad="quote-notes"), iso(utc_now()), quote_id))
             self._audit(db, user, "update_status", "quote_request", str(quote_id), {"status": status})
         self._json({"ok": True, "id": quote_id, "status": status})
 
@@ -385,27 +408,84 @@ class TipsAdminRequestHandler(TipsRequestHandler):
             raise
         self._json({"ok": True, "id": entity_id})
 
+    def _create_user(self, user: dict[str, object], data: dict[str, object]) -> None:
+        """Permite al superadmin raíz crear clientes o administradores.
+
+        Toda cuenta creada desde administración recibe una contraseña temporal y
+        debe reemplazarla al iniciar sesión. Desde v6.4, el 2FA administrativo es
+        opcional y no bloquea el acceso al panel.
+        """
+        if user.get("role") != "superadmin":
+            self._json({"error": "Solo el superadmin raíz puede crear cuentas administrativas."}, HTTPStatus.FORBIDDEN)
+            return
+        display_name = str(data.get("display_name", "")).strip()
+        email = str(data.get("email", "")).strip().lower()
+        role = str(data.get("role", "user")).strip()
+        temporary_password = str(data.get("temporary_password", ""))
+        if not 2 <= len(display_name) <= 120 or not EMAIL_RE.match(email) or role not in USER_ROLES:
+            self._json({"error": "Revisa el nombre, correo y rol del usuario."}, HTTPStatus.BAD_REQUEST)
+            return
+        try:
+            encoded = hash_password(temporary_password)
+        except ValueError as exc:
+            self._json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+            return
+        now = iso(utc_now())
+        try:
+            with transaction(self.settings) as db:
+                cur = db.execute(
+                    """INSERT INTO users(
+                        email,password_hash,display_name,role,must_change_password,
+                        two_factor_enabled,is_active,failed_login_count,created_at,updated_at
+                    ) VALUES(?,?,?,?,1,0,1,0,?,?)""",
+                    (email, encoded, display_name, role, now, now),
+                )
+                target_id = cur.lastrowid
+                self._audit(db, user, "create", "user", str(target_id), {"email": email, "role": role})
+        except Exception as exc:
+            if "UNIQUE constraint failed" in str(exc):
+                self._json({"error": "Ya existe una cuenta con ese correo."}, HTTPStatus.CONFLICT)
+                return
+            raise
+        self._json({
+            "ok": True,
+            "id": target_id,
+            "user": {
+                "id": target_id, "email": email, "display_name": display_name,
+                "role": role, "must_change_password": True, "two_factor_enabled": False, "is_active": True,
+            },
+        }, HTTPStatus.CREATED)
+
     def _update_user(self, user: dict[str, object], data: dict[str, object]) -> None:
-        """Actualiza rol o estado de una cuenta con controles administrativos."""
+        """Actualiza cuentas normales/admin sin permitir degradar el superadmin raíz."""
         target_id = data.get("id")
         role = str(data.get("role", "")).strip()
         is_active = int(bool(data.get("is_active", True)))
-        if not isinstance(target_id, int) or role not in USER_ROLES:
+        if type(target_id) is not int or role not in USER_ROLES or type(data.get("is_active", True)) is not bool:
             self._json({"error": "Usuario o rol inválido."}, HTTPStatus.BAD_REQUEST)
             return
-        if target_id == user["id"] and (role != "admin" or not is_active):
-            self._json({"error": "No puedes quitar tus propios permisos administrativos ni desactivar tu cuenta desde aquí."}, HTTPStatus.CONFLICT)
-            return
         with transaction(self.settings) as db:
-            target = db.execute("SELECT id,role,is_active FROM users WHERE id=?", (target_id,)).fetchone()
+            target = db.execute("SELECT id,email,role,is_active FROM users WHERE id=?", (target_id,)).fetchone()
             if not target:
                 self._json({"error": "Usuario no encontrado."}, HTTPStatus.NOT_FOUND)
                 return
+            if target["role"] == "superadmin" or str(target["email"]).lower() == "root@demo.com":
+                self._json({"error": "El superadmin raíz no puede degradarse ni desactivarse."}, HTTPStatus.CONFLICT)
+                return
+            if user["role"] != "superadmin" and (role != target["role"] or target["role"] == "admin"):
+                self._json({"error": "Solo la cuenta raíz puede cambiar roles o administrar otras cuentas administrativas."}, HTTPStatus.FORBIDDEN)
+                return
+            if target_id == user["id"] and (role != "admin" or not is_active):
+                self._json({"error": "No puedes quitar tus propios permisos administrativos ni desactivar tu cuenta desde aquí."}, HTTPStatus.CONFLICT)
+                return
             if target["role"] == "admin" and (role != "admin" or not is_active):
-                active_admins = db.execute("SELECT COUNT(*) FROM users WHERE role='admin' AND is_active=1").fetchone()[0]
+                active_admins = db.execute("SELECT COUNT(*) FROM users WHERE role IN('admin','superadmin') AND is_active=1").fetchone()[0]
                 if active_admins <= 1:
-                    self._json({"error": "Debe permanecer al menos un administrador activo."}, HTTPStatus.CONFLICT)
+                    self._json({"error": "Debe permanecer al menos una cuenta administrativa activa."}, HTTPStatus.CONFLICT)
                     return
+            if role != target["role"] or is_active != target["is_active"]:
+                db.execute("UPDATE sessions SET revoked_at=? WHERE user_id=? AND revoked_at IS NULL", (iso(utc_now()), target_id))
+                self._invalidate_recovery(db, target_id)
             db.execute("UPDATE users SET role=?,is_active=?,updated_at=? WHERE id=?", (role, is_active, iso(utc_now()), target_id))
             self._audit(db, user, "update", "user", str(target_id), {"role": role, "is_active": is_active})
         self._json({"ok": True, "id": target_id})
@@ -423,5 +503,6 @@ def create_server(settings: Settings) -> ThreadingHTTPServer:
     handler = type("ConfiguredTipsAdminRequestHandler", (TipsAdminRequestHandler,), {
         "settings": settings,
         "rate_limiter": RateLimiter(settings.rate_limit_per_minute),
+        "sensitive_rate_limiter": RateLimiter(min(10, settings.rate_limit_per_minute)),
     })
     return ThreadingHTTPServer((settings.host, settings.port), handler)

@@ -1,10 +1,28 @@
--- Esquema relacional principal de Tips. Define tablas, restricciones, índices y relaciones persistentes.
--- Mantener este archivo sincronizado con las reglas del backend que consumen sus tablas.
-
+-- Esquema relacional principal de TIPS v6.
 PRAGMA foreign_keys = ON;
-CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT NOT NULL COLLATE NOCASE UNIQUE,password_hash TEXT,display_name TEXT NOT NULL,role TEXT NOT NULL DEFAULT 'user' CHECK(role IN('user','admin')),two_factor_secret_encrypted TEXT,is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN(0,1)),failed_login_count INTEGER NOT NULL DEFAULT 0,locked_until TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
+
+CREATE TABLE IF NOT EXISTS users(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL COLLATE NOCASE UNIQUE,
+  password_hash TEXT,
+  display_name TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'user' CHECK(role IN('user','admin','superadmin')),
+  must_change_password INTEGER NOT NULL DEFAULT 0 CHECK(must_change_password IN(0,1)),
+  two_factor_secret_encrypted TEXT,
+  two_factor_enabled INTEGER NOT NULL DEFAULT 0 CHECK(two_factor_enabled IN(0,1)),
+  is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN(0,1)),
+  failed_login_count INTEGER NOT NULL DEFAULT 0 CHECK(failed_login_count>=0),
+  locked_until TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS oauth_accounts(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,provider TEXT NOT NULL,provider_subject TEXT NOT NULL,email TEXT,created_at TEXT NOT NULL,UNIQUE(provider,provider_subject));
 CREATE TABLE IF NOT EXISTS sessions(id INTEGER PRIMARY KEY AUTOINCREMENT,token_hash TEXT NOT NULL UNIQUE,user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,created_at TEXT NOT NULL,expires_at TEXT NOT NULL,last_seen_at TEXT NOT NULL,revoked_at TEXT); CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash);
+CREATE TABLE IF NOT EXISTS password_reset_tokens(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,token_hash TEXT NOT NULL UNIQUE,created_at TEXT NOT NULL,expires_at TEXT NOT NULL,used_at TEXT);
+CREATE INDEX IF NOT EXISTS idx_password_reset_user ON password_reset_tokens(user_id,expires_at);
+CREATE TABLE IF NOT EXISTS auth_challenges(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,challenge_hash TEXT NOT NULL UNIQUE,purpose TEXT NOT NULL CHECK(purpose IN('login_2fa','enable_2fa')),created_at TEXT NOT NULL,expires_at TEXT NOT NULL,used_at TEXT);
+CREATE INDEX IF NOT EXISTS idx_auth_challenge_user ON auth_challenges(user_id,expires_at);
+
 CREATE TABLE IF NOT EXISTS categories(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,slug TEXT NOT NULL UNIQUE,sort_order INTEGER NOT NULL DEFAULT 0,is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN(0,1)),created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS products(id INTEGER PRIMARY KEY AUTOINCREMENT,category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,name TEXT NOT NULL,slug TEXT NOT NULL UNIQUE,description TEXT NOT NULL DEFAULT '',base_price_cents INTEGER NOT NULL CHECK(base_price_cents>=0),currency TEXT NOT NULL DEFAULT 'USD' CHECK(length(currency)=3),stock_status TEXT NOT NULL DEFAULT 'available' CHECK(stock_status IN('available','low','out','made_to_order')),sort_order INTEGER NOT NULL DEFAULT 0,is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN(0,1)),created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP); CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
 CREATE TABLE IF NOT EXISTS product_variants(id INTEGER PRIMARY KEY AUTOINCREMENT,product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,sku TEXT NOT NULL UNIQUE,option_summary TEXT NOT NULL DEFAULT '',price_cents INTEGER CHECK(price_cents IS NULL OR price_cents>=0),stock_quantity INTEGER CHECK(stock_quantity IS NULL OR stock_quantity>=0),is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN(0,1)),created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
@@ -13,11 +31,26 @@ CREATE TABLE IF NOT EXISTS customizations(id INTEGER PRIMARY KEY AUTOINCREMENT,n
 CREATE TABLE IF NOT EXISTS customization_values(id INTEGER PRIMARY KEY AUTOINCREMENT,customization_id INTEGER NOT NULL REFERENCES customizations(id) ON DELETE CASCADE,label TEXT NOT NULL,price_delta_cents INTEGER NOT NULL DEFAULT 0,is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN(0,1)));
 CREATE TABLE IF NOT EXISTS product_customizations(product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,customization_id INTEGER NOT NULL REFERENCES customizations(id) ON DELETE CASCADE,sort_order INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(product_id,customization_id));
 CREATE TABLE IF NOT EXISTS inventory_movements(id INTEGER PRIMARY KEY AUTOINCREMENT,variant_id INTEGER NOT NULL REFERENCES product_variants(id) ON DELETE CASCADE,delta INTEGER NOT NULL,reason TEXT NOT NULL,reference_type TEXT,reference_id INTEGER,created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE IF NOT EXISTS carts(id INTEGER PRIMARY KEY AUTOINCREMENT,session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,status TEXT NOT NULL DEFAULT 'active' CHECK(status IN('active','converted','abandoned')),currency TEXT NOT NULL DEFAULT 'USD',created_at TEXT NOT NULL,updated_at TEXT NOT NULL); CREATE INDEX IF NOT EXISTS idx_carts_session_status ON carts(session_id,status);
+
+CREATE TABLE IF NOT EXISTS carts(id INTEGER PRIMARY KEY AUTOINCREMENT,session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,status TEXT NOT NULL DEFAULT 'active' CHECK(status IN('active','converted','abandoned')),currency TEXT NOT NULL DEFAULT 'USD' CHECK(length(currency)=3),created_at TEXT NOT NULL,updated_at TEXT NOT NULL); CREATE INDEX IF NOT EXISTS idx_carts_session_status ON carts(session_id,status); CREATE INDEX IF NOT EXISTS idx_carts_user_status ON carts(user_id,status);
 CREATE TABLE IF NOT EXISTS cart_items(id INTEGER PRIMARY KEY AUTOINCREMENT,cart_id INTEGER NOT NULL REFERENCES carts(id) ON DELETE CASCADE,variant_id INTEGER NOT NULL REFERENCES product_variants(id) ON DELETE RESTRICT,quantity INTEGER NOT NULL CHECK(quantity>0 AND quantity<=25),unit_price_cents INTEGER NOT NULL CHECK(unit_price_cents>=0),customization_json TEXT NOT NULL DEFAULT '[]',created_at TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS orders(id INTEGER PRIMARY KEY AUTOINCREMENT,public_id TEXT NOT NULL UNIQUE,user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,email TEXT,customer_name TEXT NOT NULL,phone TEXT,status TEXT NOT NULL CHECK(status IN('pending','paid','processing','ready','shipped','completed','cancelled','refunded')),currency TEXT NOT NULL DEFAULT 'USD',subtotal_cents INTEGER NOT NULL CHECK(subtotal_cents>=0),shipping_cents INTEGER NOT NULL DEFAULT 0 CHECK(shipping_cents>=0),discount_cents INTEGER NOT NULL DEFAULT 0 CHECK(discount_cents>=0),total_cents INTEGER NOT NULL CHECK(total_cents>=0),shipping_address_json TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
+
+CREATE TABLE IF NOT EXISTS orders(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,public_id TEXT NOT NULL UNIQUE,user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  email TEXT,customer_name TEXT NOT NULL,phone TEXT,
+  status TEXT NOT NULL CHECK(status IN('pending_payment','paid','payment_failed','processing','ready','shipped','completed','cancelled','expired','refunded')),
+  currency TEXT NOT NULL DEFAULT 'USD' CHECK(length(currency)=3),subtotal_cents INTEGER NOT NULL CHECK(subtotal_cents>=0),shipping_cents INTEGER NOT NULL DEFAULT 0 CHECK(shipping_cents>=0),discount_cents INTEGER NOT NULL DEFAULT 0 CHECK(discount_cents>=0),total_cents INTEGER NOT NULL CHECK(total_cents>=0),shipping_address_json TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_orders_user_created ON orders(user_id,created_at);
 CREATE TABLE IF NOT EXISTS order_items(id INTEGER PRIMARY KEY AUTOINCREMENT,order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,variant_id INTEGER REFERENCES product_variants(id) ON DELETE SET NULL,product_name TEXT NOT NULL,sku TEXT,quantity INTEGER NOT NULL CHECK(quantity>0),unit_price_cents INTEGER NOT NULL CHECK(unit_price_cents>=0),customization_json TEXT NOT NULL DEFAULT '[]');
-CREATE TABLE IF NOT EXISTS payments(id INTEGER PRIMARY KEY AUTOINCREMENT,order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,provider TEXT NOT NULL,provider_payment_id TEXT,status TEXT NOT NULL,amount_cents INTEGER NOT NULL CHECK(amount_cents>=0),currency TEXT NOT NULL DEFAULT 'USD',idempotency_key TEXT NOT NULL UNIQUE,provider_payload_json TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS inventory_reservations(id INTEGER PRIMARY KEY AUTOINCREMENT,order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,variant_id INTEGER NOT NULL REFERENCES product_variants(id) ON DELETE RESTRICT,quantity INTEGER NOT NULL CHECK(quantity>0),status TEXT NOT NULL DEFAULT 'reserved' CHECK(status IN('reserved','consumed','released','expired')),expires_at TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,UNIQUE(order_id,variant_id));
+CREATE INDEX IF NOT EXISTS idx_inventory_reservation_expiry ON inventory_reservations(status,expires_at);
+
+CREATE TABLE IF NOT EXISTS payments(id INTEGER PRIMARY KEY AUTOINCREMENT,order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,provider TEXT NOT NULL,provider_payment_id TEXT,status TEXT NOT NULL CHECK(status IN('pending','paid','failed','cancelled','refunded','partially_refunded')),amount_cents INTEGER NOT NULL CHECK(amount_cents>=0),currency TEXT NOT NULL DEFAULT 'USD' CHECK(length(currency)=3),idempotency_key TEXT NOT NULL UNIQUE,provider_payload_json TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,UNIQUE(provider,provider_payment_id));
+CREATE TABLE IF NOT EXISTS payment_attempts(id INTEGER PRIMARY KEY AUTOINCREMENT,payment_id INTEGER NOT NULL REFERENCES payments(id) ON DELETE CASCADE,status TEXT NOT NULL,provider_reference TEXT,payload_json TEXT NOT NULL DEFAULT '{}',created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS payment_webhook_events(id INTEGER PRIMARY KEY AUTOINCREMENT,provider TEXT NOT NULL,event_id TEXT NOT NULL,event_type TEXT NOT NULL,payload_json TEXT NOT NULL,processed_at TEXT NOT NULL,UNIQUE(provider,event_id));
+CREATE TABLE IF NOT EXISTS refunds(id INTEGER PRIMARY KEY AUTOINCREMENT,payment_id INTEGER NOT NULL REFERENCES payments(id) ON DELETE RESTRICT,provider_refund_id TEXT,status TEXT NOT NULL CHECK(status IN('pending','succeeded','failed')),amount_cents INTEGER NOT NULL CHECK(amount_cents>0),reason TEXT NOT NULL DEFAULT '',created_at TEXT NOT NULL,updated_at TEXT NOT NULL,UNIQUE(provider_refund_id));
+
 CREATE TABLE IF NOT EXISTS portfolio_projects(id INTEGER PRIMARY KEY AUTOINCREMENT,title TEXT NOT NULL,slug TEXT NOT NULL UNIQUE,category TEXT NOT NULL,summary TEXT NOT NULL DEFAULT '',description TEXT NOT NULL DEFAULT '',location TEXT,completed_year INTEGER,specifications_json TEXT NOT NULL DEFAULT '{}',sort_order INTEGER NOT NULL DEFAULT 0,is_published INTEGER NOT NULL DEFAULT 0 CHECK(is_published IN(0,1)),created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS portfolio_images(id INTEGER PRIMARY KEY AUTOINCREMENT,project_id INTEGER NOT NULL REFERENCES portfolio_projects(id) ON DELETE CASCADE,path TEXT NOT NULL,alt_text TEXT NOT NULL,sort_order INTEGER NOT NULL DEFAULT 0,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS quote_requests(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,contact TEXT NOT NULL,project_type TEXT NOT NULL,message TEXT NOT NULL,reference_project_id INTEGER REFERENCES portfolio_projects(id) ON DELETE SET NULL,status TEXT NOT NULL DEFAULT 'new' CHECK(status IN('new','contacted','qualified','closed','archived')),internal_notes TEXT NOT NULL DEFAULT '',created_at TEXT NOT NULL,updated_at TEXT);

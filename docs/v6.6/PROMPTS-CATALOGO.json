@@ -1,0 +1,43 @@
+[
+  {
+    "archivo": "assets/catalog/auriculares-premium.webp",
+    "modo": "Generador de imágenes integrado",
+    "prompt": "Use case: product-mockup. Asset type: premium ecommerce catalog photography for TIPS. Subject: Pair of premium wireless in-ear earbuds with open compact charging case, warm ivory matte finish, precisely detailed speaker mesh and soft silicone ear tips. Single product composition, full object inside frame with generous breathing room for square and 4:3 crops. Seamless warm ivory studio backdrop and pale limestone surface, soft directional daylight from upper left, delicate realistic contact shadow. Museum-shop editorial aesthetic, exceptionally realistic materials, crisp detail, professional high resolution photograph, natural proportions. Cohesive muted earthy palette. No text, no watermark, no added accessories or decorative objects.",
+    "edicion_final": "Edit this product photograph. Change only the wireless earbuds and their charging case from ivory to premium matte black, matching the catalog variant called Negro. Preserve the exact product composition, open lid, small details, light ivory backdrop, limestone surface, daylight, realism and shadows. No text, no new objects."
+  },
+  {
+    "archivo": "assets/catalog/mochila-urbana.webp",
+    "modo": "Generador de imágenes integrado",
+    "prompt": "Use case: product-mockup. Asset type: premium ecommerce catalog photography for TIPS. Subject: Urban everyday backpack in muted olive canvas, elegant functional compartments, front zipper pocket, padded shoulder straps, three-quarter upright view. Single product composition, full object inside frame with generous breathing room for square and 4:3 crops. Seamless warm ivory studio backdrop and pale limestone surface, soft directional daylight from upper left, delicate realistic contact shadow. Museum-shop editorial aesthetic, exceptionally realistic materials, crisp detail, professional high resolution photograph, natural proportions. Cohesive muted earthy palette. No text, no watermark, no added accessories or decorative objects."
+  },
+  {
+    "archivo": "assets/catalog/botella-termica.webp",
+    "modo": "Generador de imágenes integrado",
+    "prompt": "Use case: product-mockup. Asset type: premium ecommerce catalog photography for TIPS. Subject: Reusable matte sage green stainless steel insulated water bottle with screw cap, refined cylinder form, no branding. Single product composition, full object inside frame with generous breathing room for square and 4:3 crops. Seamless warm ivory studio backdrop and pale limestone surface, soft directional daylight from upper left, delicate realistic contact shadow. Museum-shop editorial aesthetic, exceptionally realistic materials, crisp detail, professional high resolution photograph, natural proportions. Cohesive muted earthy palette. No text, no watermark, no added accessories or decorative objects."
+  },
+  {
+    "archivo": "assets/catalog/zapatillas-running.webp",
+    "modo": "Generador de imágenes integrado",
+    "prompt": "Use case: product-mockup. Asset type: premium ecommerce catalog photography for TIPS. Subject: Pair of lightweight cream and muted olive running sneakers, breathable woven uppers, sculpted rubber soles, meticulous stitching. Single product composition, full object inside frame with generous breathing room for square and 4:3 crops. Seamless warm ivory studio backdrop and pale limestone surface, soft directional daylight from upper left, delicate realistic contact shadow. Museum-shop editorial aesthetic, exceptionally realistic materials, crisp detail, professional high resolution photograph, natural proportions. Cohesive muted earthy palette. No text, no watermark, no added accessories or decorative objects."
+  },
+  {
+    "archivo": "assets/catalog/lampara-escritorio.webp",
+    "modo": "Generador de imágenes integrado",
+    "prompt": "Use case: product-mockup. Asset type: premium ecommerce catalog photography for TIPS. Subject: Compact warm white desk lamp with domed metal shade, slender curved stem and circular base, warm lit glow, tasteful minimalist industrial design. Single product composition, full object inside frame with generous breathing room for square and 4:3 crops. Seamless warm ivory studio backdrop and pale limestone surface, soft directional daylight from upper left, delicate realistic contact shadow. Museum-shop editorial aesthetic, exceptionally realistic materials, crisp detail, professional high resolution photograph, natural proportions. Cohesive muted earthy palette. No text, no watermark, no added accessories or decorative objects."
+  },
+  {
+    "archivo": "assets/catalog/vela-terracota.webp",
+    "modo": "Generador de imágenes integrado",
+    "prompt": "Use case: product-mockup. Asset type: premium ecommerce catalog photography for TIPS. Subject: Handcrafted candle in a small earthy terracotta reusable ceramic vessel, cream natural wax and a single subtly lit wick, tactile clay surface. Single product composition, full object inside frame with generous breathing room for square and 4:3 crops. Seamless warm ivory studio backdrop and pale limestone surface, soft directional daylight from upper left, delicate realistic contact shadow. Museum-shop editorial aesthetic, exceptionally realistic materials, crisp detail, professional high resolution photograph, natural proportions. Cohesive muted earthy palette. No text, no watermark, no added accessories or decorative objects."
+  },
+  {
+    "archivo": "assets/catalog/bolso-yute-tips.webp",
+    "modo": "Generador de imágenes integrado",
+    "prompt": "Use case: product-mockup. Asset type: premium ecommerce catalog photography for TIPS. Subject: Artisanal natural jute tote bag with woven fibers, sturdy short handles and clean cotton inner lining, upright three-quarter view. Single product composition, full object inside frame with generous breathing room for square and 4:3 crops. Seamless warm ivory studio backdrop and pale limestone surface, soft directional daylight from upper left, delicate realistic contact shadow. Museum-shop editorial aesthetic, exceptionally realistic materials, crisp detail, professional high resolution photograph, natural proportions. Cohesive muted earthy palette. No text, no watermark, no added accessories or decorative objects."
+  },
+  {
+    "archivo": "assets/catalog/libreta-boceto.webp",
+    "modo": "Generador de imágenes integrado",
+    "prompt": "Use case: product-mockup. Asset type: premium ecommerce catalog photography for TIPS. Subject: Recycled paper sketchbook with warm kraft cover, visible cream pages and subtle spine stitching, slightly open showing a blank interior page. Single product composition, full object inside frame with generous breathing room for square and 4:3 crops. Seamless warm ivory studio backdrop and pale limestone surface, soft directional daylight from upper left, delicate realistic contact shadow. Museum-shop editorial aesthetic, exceptionally realistic materials, crisp detail, professional high resolution photograph, natural proportions. Cohesive muted earthy palette. No text, no watermark, no added accessories or decorative objects."
+  }
+]
